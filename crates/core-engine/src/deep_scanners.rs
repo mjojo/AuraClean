@@ -142,7 +142,7 @@ pub fn scan_hidden_appdata_and_documents(max_results: usize) -> Vec<DeepFolderIn
                 }
 
                 let (size_bytes, file_count, has_saves) =
-                    compute_bounded_dir_metrics(&sub_path, 3, 250);
+                    compute_bounded_dir_metrics(&sub_path, 4, 5_000);
                 if size_bytes < 512 * 1024 {
                     continue;
                 }
@@ -199,7 +199,7 @@ pub fn scan_hidden_appdata_and_documents(max_results: usize) -> Vec<DeepFolderIn
                 }
 
                 let (size_bytes, file_count, has_saves) =
-                    compute_bounded_dir_metrics(&sub_path, 3, 250);
+                    compute_bounded_dir_metrics(&sub_path, 4, 5_000);
                 if size_bytes < 64 * 1024 {
                     continue;
                 }
@@ -513,7 +513,7 @@ pub fn scan_stale_dev_artifacts(max_results: usize) -> Vec<DevArtifactEntry> {
                     continue;
                 }
 
-                let (size_bytes, _, _) = compute_bounded_dir_metrics(&candidate, 3, 300);
+                let (size_bytes, _, _) = compute_bounded_dir_metrics(&candidate, 6, 25_000);
                 if size_bytes < 512 * 1024 {
                     continue;
                 }
@@ -696,7 +696,7 @@ pub fn scan_ghost_uninstalled_leftovers(max_results: usize) -> Vec<GhostLeftover
                 continue;
             }
 
-            let (size_bytes, file_count, has_saves) = compute_bounded_dir_metrics(&path, 2, 150);
+            let (size_bytes, file_count, has_saves) = compute_bounded_dir_metrics(&path, 5, 10_000);
             if size_bytes < 128 * 1024 || file_count == 0 {
                 continue;
             }

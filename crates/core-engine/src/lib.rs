@@ -214,7 +214,7 @@ pub fn scan_directory_with_rule(
 
     for entry_res in jwalk::WalkDir::new(base_dir)
         .follow_links(false)
-        .max_depth(4)
+        .max_depth(6)
         .skip_hidden(false)
     {
         if summary.items.len() >= max_files {

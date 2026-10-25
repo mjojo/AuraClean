@@ -134,6 +134,7 @@ dependencies = [
  "chrono",
  "core-engine",
  "ipc-protocol",
+ "jwalk",
  "safety-guard",
  "serde",
  "serde_json",

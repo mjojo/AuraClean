@@ -1,0 +1,34 @@
+name: AuraClean CI & Release Verification
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  verify-windows:
+    name: Windows x86_64 Build, Clippy & Safety Tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install stable Rust toolchain (Edition 2024)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Clippy Linter (Zero Warnings)
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Run Safety Guard & TOML Sandbox Unit Tests
+        run: cargo test --workspace
+
+      - name: Build 1-Click Native GUI Release Binary (AuraClean.exe)
+        run: cargo build --release -p auraclean-gui

@@ -550,9 +550,110 @@
       color: #FFFFFF;
       border-color: rgba(255, 255, 255, 0.35);
     }
+
+    /* Animated Startup Splash Screen */
+    .splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      background: radial-gradient(circle at 50% 42%, rgba(168, 85, 247, 0.25), rgba(11, 11, 20, 0.99) 65%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    .splash-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-logo-wrap {
+      width: 132px;
+      height: 132px;
+      border-radius: 28px;
+      border: 2px solid var(--brand-purple);
+      box-shadow: 0 0 42px rgba(168, 85, 247, 0.55), inset 0 0 22px rgba(74, 222, 128, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0B0B14;
+      animation: pulseSpin 1.4s ease-in-out infinite;
+    }
+
+    .splash-logo-wrap img {
+      width: 112px;
+      height: 112px;
+      border-radius: 22px;
+    }
+
+    .splash-title {
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      background: linear-gradient(90deg, #FFFFFF, #D8B4FE, #4ADE80);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .splash-sub {
+      font-size: 13px;
+      color: var(--brand-green);
+      font-family: var(--font-mono);
+    }
+
+    .splash-bar-track {
+      width: 260px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .splash-bar-fill {
+      height: 100%;
+      width: 35%;
+      background: linear-gradient(90deg, var(--brand-purple), var(--brand-green));
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    .btn-item-clean {
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(168, 85, 247, 0.5);
+      background: rgba(168, 85, 247, 0.18);
+      color: #E9D5FF;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-item-clean:hover {
+      background: var(--brand-purple-deep);
+      color: #FFFFFF;
+    }
   </style>
 </head>
 <body>
+  <!-- Animated Startup Splash Screen -->
+  <div class="splash-screen" id="splash-screen">
+    <div class="splash-logo-wrap">
+      <img id="splash-logo" alt="mjojo" />
+    </div>
+    <div class="splash-title">AuraClean by mjojo</div>
+    <div class="splash-sub" id="splash-status">Initializing Zero-Breakage Safety Core &amp; UTF-16 Engine...</div>
+    <div class="splash-bar-track">
+      <div class="splash-bar-fill" id="splash-bar"></div>
+    </div>
+  </div>
+
   <aside class="sidebar">
     <div class="brand-box">
       <img id="sidebar-logo" class="brand-logo" alt="mjojo" />
@@ -706,7 +807,8 @@
         modal_note: "🟢 Green items are checked by default. 🟡 Yellow (shader/dev caches) are unchecked by default.",
         modal_cancel: "Cancel",
         modal_confirm: "✅ Authorize & Move to Time-Capsule",
-        reg_checkbox_title: "Orphaned Registry Keys (.reg + JSON Snapshot)"
+        reg_checkbox_title: "Orphaned Registry Keys (.reg + JSON Snapshot)",
+        btn_clean_single: "🧹 Clean Item"
       },
       ru: {
         nav_dashboard: "⚡ Пульс Системы",
@@ -748,7 +850,8 @@
         modal_note: "🟢 Безопасные категории отмечены по умолчанию. 🟡 Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
         modal_cancel: "Отмена",
         modal_confirm: "✅ Разрешить и Поместить в Карантин",
-        reg_checkbox_title: "Осиротевшие ключи реестра (Снимок .reg + JSON)"
+        reg_checkbox_title: "Осиротевшие ключи реестра (Снимок .reg + JSON)",
+        btn_clean_single: "🧹 Очистить отдельно"
       }
     };
 
@@ -808,7 +911,7 @@
       sendIpc('scan');
     }
 
-    function openPermissionModal() {
+    function openPermissionModal(onlyRuleId = null) {
       const t = I18N[currentLang];
       document.getElementById('modal-title').textContent = t.modal_title;
       document.getElementById('modal-subtitle').textContent = t.modal_subtitle;
@@ -819,11 +922,15 @@
       const container = document.getElementById('modal-items-list');
       container.innerHTML = '';
 
-      const rules = (appState.rules || []).filter(r => (r.scanned_count || 0) > 0);
+      let rules = (appState.rules || []).filter(r => (r.scanned_count || 0) > 0);
+      if (onlyRuleId) {
+        rules = rules.filter(r => r.id === onlyRuleId);
+      }
+
       rules.forEach(r => {
         const title = currentLang === 'ru' ? r.name_ru : r.name_en;
         const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
-        const defaultChecked = r.safety_level === 'Green' ? 'checked' : '';
+        const defaultChecked = (onlyRuleId || r.safety_level === 'Green') ? 'checked' : '';
         const samplesHtml = (r.sample_paths || [])
           .map(p => `<div class="sample-path">• ${p}</div>`)
           .join('');
@@ -849,7 +956,7 @@
       });
 
       const regFindings = appState.registryFindings || [];
-      if (regFindings.length > 0) {
+      if (!onlyRuleId && regFindings.length > 0) {
         const label = document.createElement('label');
         label.className = 'perm-item';
         label.innerHTML = `
@@ -871,11 +978,56 @@
       document.getElementById('permission-modal').classList.add('open');
     }
 
+    function requestSingleRuleClean(ruleId) {
+      openPermissionModal(ruleId);
+    }
+
+    let pendingSingleAction = null;
+
+    function requestSingleItemAction(cmd, targetId, displayTitle, displaySize) {
+      pendingSingleAction = { cmd, targetId };
+      const t = I18N[currentLang];
+      document.getElementById('modal-title').textContent = t.modal_title;
+      document.getElementById('modal-subtitle').textContent = t.modal_subtitle;
+      document.getElementById('modal-summary-note').textContent = t.modal_note;
+      document.getElementById('btn-modal-cancel').textContent = t.modal_cancel;
+      document.getElementById('btn-modal-confirm').textContent = t.modal_confirm;
+
+      const container = document.getElementById('modal-items-list');
+      container.innerHTML = `
+        <label class="perm-item">
+          <div class="perm-left">
+            <input type="checkbox" class="perm-check" id="single-item-confirm-check" checked />
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Purple">Single Item</span>
+                <span>${displayTitle}</span>
+              </div>
+              <div class="rule-desc">Backed up to reversible Time-Capsule Vault before removal.</div>
+            </div>
+          </div>
+          <div class="rule-metric">${displaySize}</div>
+        </label>
+      `;
+      document.getElementById('permission-modal').classList.add('open');
+    }
+
     function closePermissionModal() {
+      pendingSingleAction = null;
       document.getElementById('permission-modal').classList.remove('open');
     }
 
     function confirmApprovedQuarantine() {
+      if (pendingSingleAction) {
+        const singleCheck = document.getElementById('single-item-confirm-check');
+        const action = pendingSingleAction;
+        closePermissionModal();
+        if (singleCheck && singleCheck.checked) {
+          sendIpc(action.cmd, { target_id: action.targetId });
+        }
+        return;
+      }
+
       const checkedRules = Array.from(document.querySelectorAll('.rule-perm-checkbox:checked'))
         .map(cb => cb.value);
       const regCheckbox = document.getElementById('perm-include-registry');
@@ -913,7 +1065,11 @@
 
     function renderUI() {
       const t = I18N[currentLang];
-      if (appState.logoDataUri) document.getElementById('sidebar-logo').src = appState.logoDataUri;
+      if (appState.logoDataUri) {
+        document.getElementById('sidebar-logo').src = appState.logoDataUri;
+        const splashLogo = document.getElementById('splash-logo');
+        if (splashLogo) splashLogo.src = appState.logoDataUri;
+      }
       if (appState.mascotDataUri) document.getElementById('orb-mascot').src = appState.mascotDataUri;
 
       document.getElementById('nav-dashboard').textContent = t.nav_dashboard;
@@ -952,9 +1108,10 @@
       if (appState.scanResults) {
         const sr = appState.scanResults;
         document.getElementById('val-reclaimable').textContent = formatBytes(sr.totalBytes);
-        document.getElementById('sub-reclaimable').textContent = `${sr.totalItems} files | ${sr.registryCount || 0} reg keys`;
+        document.getElementById('sub-reclaimable').textContent =
+          `Rules: ${formatBytes(sr.rulesBytes || 0)} | Dev: ${formatBytes(sr.devBytes || 0)} | Ghost: ${formatBytes(sr.ghostBytes || 0)}`;
         document.getElementById('val-shields').textContent = sr.totalShielded;
-        const hasActionable = sr.totalItems > 0 || (sr.registryCount || 0) > 0;
+        const hasActionable = sr.totalBytes > 0 || (sr.registryCount || 0) > 0;
         document.getElementById('btn-clean').style.display = hasActionable ? 'inline-block' : 'none';
       }
 
@@ -968,6 +1125,7 @@
           const row = document.createElement('div');
           row.className = 'rule-row';
           const cyrTag = da.hasCyrillic ? `<span class="badge badge-Green">UTF-16</span>` : '';
+          const safeTitle = `${da.projectName} (${da.artifactKind})`.replace(/'/g, "");
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -978,7 +1136,10 @@
               <div class="rule-desc">Rebuild command: <code>${da.rebuildHint}</code> • Inactive: ${da.daysInactive} days</div>
               <div class="sample-path">${da.fullPath}</div>
             </div>
-            <div class="rule-metric">${formatBytes(da.sizeBytes)}</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="rule-metric">${formatBytes(da.sizeBytes)}</div>
+              <button class="btn-item-clean" onclick="requestSingleItemAction('clean_single_dev', '${da.id}', '${safeTitle}', '${formatBytes(da.sizeBytes)}')">${t.btn_clean_single}</button>
+            </div>
           `;
           listEl.appendChild(row);
         });
@@ -997,6 +1158,10 @@
           row.className = 'rule-row';
           const reason = currentLang === 'ru' ? gl.reasonRu : gl.reasonEn;
           const saveTag = gl.hasProtectedSavegames ? `<span class="badge badge-Red">🛡 SAVEGAME SHIELDED</span>` : '';
+          const safeName = gl.appName.replace(/'/g, "");
+          const cleanBtn = gl.hasProtectedSavegames
+            ? ''
+            : `<button class="btn-item-clean" onclick="requestSingleItemAction('clean_single_ghost', '${gl.id}', '${safeName}', '${formatBytes(gl.sizeBytes)}')">${t.btn_clean_single}</button>`;
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -1008,7 +1173,10 @@
               <div class="rule-desc">${reason}</div>
               <div class="sample-path">${gl.fullPath}</div>
             </div>
-            <div class="rule-metric">${formatBytes(gl.sizeBytes)} (${gl.fileCount} files)</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="rule-metric">${formatBytes(gl.sizeBytes)} (${gl.fileCount} files)</div>
+              ${cleanBtn}
+            </div>
           `;
           listEl.appendChild(row);
         });
@@ -1104,6 +1272,7 @@
           row.className = 'rule-row';
           const title = currentLang === 'ru' ? rf.titleRu : rf.titleEn;
           const reason = currentLang === 'ru' ? rf.reasonRu : rf.reasonEn;
+          const safeTitle = title.replace(/'/g, "");
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -1113,7 +1282,10 @@
               <div class="rule-desc">${reason}</div>
               <div class="sample-path">${rf.rootHive}\\${rf.subkeyPath}</div>
             </div>
-            <div class="rule-metric">${rf.zone}</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="rule-metric">${rf.zone}</div>
+              <button class="btn-item-clean" onclick="requestSingleItemAction('clean_single_registry', '${rf.findingId}', '${safeTitle}', '1 reg key')">${t.btn_clean_single}</button>
+            </div>
           `;
           listEl.appendChild(row);
         });
@@ -1152,9 +1324,13 @@
           row.className = 'rule-row';
           const title = currentLang === 'ru' ? r.name_ru : r.name_en;
           const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
+          const hasFiles = (r.scanned_count || 0) > 0;
           const metric = r.scanned_count !== undefined
             ? `${r.scanned_count} files (${formatBytes(r.scanned_bytes)})`
             : r.category;
+          const singleBtn = hasFiles
+            ? `<button class="btn-item-clean" onclick="requestSingleRuleClean('${r.id}')">${t.btn_clean_single}</button>`
+            : '';
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -1163,7 +1339,10 @@
               </div>
               <div class="rule-desc">${desc}</div>
             </div>
-            <div class="rule-metric">${metric}</div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="rule-metric">${metric}</div>
+              ${singleBtn}
+            </div>
           `;
           listEl.appendChild(row);
         });
@@ -1172,6 +1351,17 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       renderUI();
+      const bar = document.getElementById('splash-bar');
+      if (bar) bar.style.width = '85%';
+      // Asynchronously hydrate deep folder and dev artifact insights while splash screen animates
+      setTimeout(() => {
+        sendIpc('boot_hydrate');
+        if (bar) bar.style.width = '100%';
+      }, 150);
+      setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) splash.classList.add('hidden');
+      }, 950);
     });
   </script>
 </body>

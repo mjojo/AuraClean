@@ -53,6 +53,8 @@ struct UiIpcMessage {
     approved_rule_ids: Vec<String>,
     #[serde(default)]
     include_registry: bool,
+    #[serde(default)]
+    target_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -78,6 +80,9 @@ struct RuleUiView {
 struct ScanUiSummary {
     total_items: usize,
     total_bytes: u64,
+    rules_bytes: u64,
+    dev_bytes: u64,
+    ghost_bytes: u64,
     total_shielded: usize,
     registry_count: usize,
 }
@@ -152,10 +157,10 @@ fn main() -> Result<()> {
         mascot_data_uri: format!("data:image/png;base64,{mascot_b64}"),
         rules: build_rule_views(&rules),
         registry_findings: Vec::new(),
-        deep_folders: scan_hidden_appdata_and_documents(25),
+        deep_folders: Vec::new(),
         space_lens_files: Vec::new(),
         startup_entries: scan_startup_entries(),
-        dev_artifacts: scan_stale_dev_artifacts(20),
+        dev_artifacts: Vec::new(),
         ghost_leftovers: Vec::new(),
         memory_telemetry: get_system_memory_telemetry(),
         scan_results: None,
@@ -257,7 +262,7 @@ fn handle_ui_command(
                 let mut samples = Vec::new();
 
                 for dir in dirs {
-                    let rep = scan_directory_with_rule(&dir, rule, locale, 150);
+                    let rep = scan_directory_with_rule(&dir, rule, locale, 50_000);
                     rule_count += rep.items.len();
                     rule_bytes += rep.total_reclaimable_bytes();
                     total_shielded += rep.skipped_locked
@@ -286,6 +291,16 @@ fn handle_ui_command(
             let ghost_leftovers = scan_ghost_uninstalled_leftovers(25);
             let memory_telemetry = get_system_memory_telemetry();
 
+            let dev_bytes: u64 = dev_artifacts.iter().map(|d| d.size_bytes).sum();
+            let ghost_bytes: u64 = ghost_leftovers
+                .iter()
+                .filter(|g| !g.has_protected_savegames)
+                .map(|g| g.size_bytes)
+                .sum();
+            let combined_reclaimable = total_bytes
+                .saturating_add(dev_bytes)
+                .saturating_add(ghost_bytes);
+
             let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
             let mut guard = shared.lock().unwrap();
             guard.frontend_state.rules = updated_views;
@@ -298,7 +313,10 @@ fn handle_ui_command(
             guard.frontend_state.memory_telemetry = memory_telemetry;
             guard.frontend_state.scan_results = Some(ScanUiSummary {
                 total_items: all_items.len(),
-                total_bytes,
+                total_bytes: combined_reclaimable,
+                rules_bytes: total_bytes,
+                dev_bytes,
+                ghost_bytes,
                 total_shielded,
                 registry_count: reg_findings.len(),
             });
@@ -396,8 +414,24 @@ fn handle_ui_command(
                     guard.frontend_state.registry_findings.clear();
                 }
 
-                let remaining_bytes: u64 =
+                let remaining_rules_bytes: u64 =
                     guard.last_scanned_items.iter().map(|i| i.size_bytes).sum();
+                let dev_bytes: u64 = guard
+                    .frontend_state
+                    .dev_artifacts
+                    .iter()
+                    .map(|d| d.size_bytes)
+                    .sum();
+                let ghost_bytes: u64 = guard
+                    .frontend_state
+                    .ghost_leftovers
+                    .iter()
+                    .filter(|g| !g.has_protected_savegames)
+                    .map(|g| g.size_bytes)
+                    .sum();
+                let combined_bytes = remaining_rules_bytes
+                    .saturating_add(dev_bytes)
+                    .saturating_add(ghost_bytes);
                 let prev_shielded = guard
                     .frontend_state
                     .scan_results
@@ -415,7 +449,10 @@ fn handle_ui_command(
 
                 guard.frontend_state.scan_results = Some(ScanUiSummary {
                     total_items: guard.last_scanned_items.len(),
-                    total_bytes: remaining_bytes,
+                    total_bytes: combined_bytes,
+                    rules_bytes: remaining_rules_bytes,
+                    dev_bytes,
+                    ghost_bytes,
                     total_shielded: prev_shielded,
                     registry_count: guard.last_registry_findings.len(),
                 });
@@ -500,6 +537,256 @@ fn handle_ui_command(
                 });
             }
         }
+        "boot_hydrate" => {
+            let deep_folders = scan_hidden_appdata_and_documents(25);
+            let dev_artifacts = scan_stale_dev_artifacts(20);
+            let memory_telemetry = get_system_memory_telemetry();
+            let mut guard = shared.lock().unwrap();
+            guard.frontend_state.deep_folders = deep_folders;
+            guard.frontend_state.dev_artifacts = dev_artifacts;
+            guard.frontend_state.memory_telemetry = memory_telemetry;
+            if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                let _ = proxy.send_event(UserEvent::BackendUpdated {
+                    state_json,
+                    toast: None,
+                });
+            }
+        }
+        "clean_single_ghost" => {
+            let Some(ref target_id) = msg.target_id else {
+                return;
+            };
+            let (maybe_ghost, vault_dir) = {
+                let guard = shared.lock().unwrap();
+                let found = guard
+                    .frontend_state
+                    .ghost_leftovers
+                    .iter()
+                    .find(|g| &g.id == target_id && !g.has_protected_savegames)
+                    .cloned();
+                (found, guard.vault_dir.clone())
+            };
+            let Some(ghost) = maybe_ghost else {
+                return;
+            };
+
+            let mut cands = Vec::new();
+            for entry in jwalk::WalkDir::new(&ghost.full_path)
+                .follow_links(false)
+                .skip_hidden(false)
+                .max_depth(4)
+                .into_iter()
+                .flatten()
+                .take(250)
+            {
+                if entry.file_type().is_file() {
+                    cands.push(QuarantineCandidate {
+                        rule_id: ghost.id.clone(),
+                        path: entry.path(),
+                        requested_tier: ipc_protocol::QuarantineTier::ArchiveToVault,
+                    });
+                }
+            }
+
+            if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))
+                && let Ok(tx_summary) = vault.quarantine_batch(&cands, &[])
+            {
+                let mut guard = shared.lock().unwrap();
+                guard
+                    .frontend_state
+                    .ghost_leftovers
+                    .retain(|g| &g.id != target_id);
+                guard.frontend_state.transactions = vault.list_transactions().unwrap_or_default();
+                guard.frontend_state.vault_bytes =
+                    vault.current_vault_footprint_bytes().unwrap_or(0);
+                recompute_scan_summary(&mut guard);
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Ghost folder '{}' moved to Time-Capsule (tx {})",
+                        ghost.app_name,
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    Locale::Ru => format!(
+                        "Остатки «{}» перенесены в Капсулу Времени (транзакция {})",
+                        ghost.app_name,
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                };
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        "clean_single_dev" => {
+            let Some(ref target_id) = msg.target_id else {
+                return;
+            };
+            let (maybe_dev, vault_dir) = {
+                let guard = shared.lock().unwrap();
+                let found = guard
+                    .frontend_state
+                    .dev_artifacts
+                    .iter()
+                    .find(|d| &d.id == target_id)
+                    .cloned();
+                (found, guard.vault_dir.clone())
+            };
+            let Some(dev) = maybe_dev else {
+                return;
+            };
+
+            let mut cands = Vec::new();
+            for entry in jwalk::WalkDir::new(&dev.full_path)
+                .follow_links(false)
+                .skip_hidden(false)
+                .max_depth(5)
+                .into_iter()
+                .flatten()
+                .take(500)
+            {
+                if entry.file_type().is_file() {
+                    cands.push(QuarantineCandidate {
+                        rule_id: dev.id.clone(),
+                        path: entry.path(),
+                        requested_tier: ipc_protocol::QuarantineTier::ManifestOnly,
+                    });
+                }
+            }
+
+            if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))
+                && let Ok(tx_summary) = vault.quarantine_batch(&cands, &[])
+            {
+                let mut guard = shared.lock().unwrap();
+                guard
+                    .frontend_state
+                    .dev_artifacts
+                    .retain(|d| &d.id != target_id);
+                guard.frontend_state.transactions = vault.list_transactions().unwrap_or_default();
+                guard.frontend_state.vault_bytes =
+                    vault.current_vault_footprint_bytes().unwrap_or(0);
+                recompute_scan_summary(&mut guard);
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Cleaned '{}' ({}) — recorded in Time-Capsule {}",
+                        dev.project_name,
+                        dev.artifact_kind,
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    Locale::Ru => format!(
+                        "Очищена сборка «{}» ({}) — зафиксировано в Time-Capsule {}",
+                        dev.project_name,
+                        dev.artifact_kind,
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                };
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        "clean_single_registry" => {
+            let Some(ref target_id) = msg.target_id else {
+                return;
+            };
+            let (maybe_reg, vault_dir) = {
+                let guard = shared.lock().unwrap();
+                let found = guard
+                    .last_registry_findings
+                    .iter()
+                    .find(|r| r.finding_id.to_string() == *target_id)
+                    .cloned();
+                (found, guard.vault_dir.clone())
+            };
+            let Some(rf) = maybe_reg else {
+                return;
+            };
+
+            let snap = RegistrySnapshotEntry {
+                root_hive: rf.root_hive.clone(),
+                subkey_path: rf.subkey_path.clone(),
+                value_name: Some(rf.value_name.clone()),
+                value_type: "REG_SZ".to_string(),
+                value_data: rf.raw_value_data.clone(),
+                human_reason: rf.reason_en.clone(),
+            };
+
+            if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))
+                && let Ok(tx_summary) = vault.quarantine_batch(&[], &[snap])
+            {
+                let mut guard = shared.lock().unwrap();
+                guard
+                    .last_registry_findings
+                    .retain(|r| r.finding_id.to_string() != *target_id);
+                guard
+                    .frontend_state
+                    .registry_findings
+                    .retain(|r| r.finding_id.to_string() != *target_id);
+                guard.frontend_state.transactions = vault.list_transactions().unwrap_or_default();
+                guard.frontend_state.vault_bytes =
+                    vault.current_vault_footprint_bytes().unwrap_or(0);
+                recompute_scan_summary(&mut guard);
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Registry key backed up to Time-Capsule (.reg snapshot {})",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    Locale::Ru => format!(
+                        "Ключ реестра сохранен в снимок .reg Time-Capsule ({})",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                };
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
         _ => {}
     }
+}
+
+fn recompute_scan_summary(guard: &mut SharedAppState) {
+    let rules_bytes: u64 = guard.last_scanned_items.iter().map(|i| i.size_bytes).sum();
+    let dev_bytes: u64 = guard
+        .frontend_state
+        .dev_artifacts
+        .iter()
+        .map(|d| d.size_bytes)
+        .sum();
+    let ghost_bytes: u64 = guard
+        .frontend_state
+        .ghost_leftovers
+        .iter()
+        .filter(|g| !g.has_protected_savegames)
+        .map(|g| g.size_bytes)
+        .sum();
+    let prev_shielded = guard
+        .frontend_state
+        .scan_results
+        .as_ref()
+        .map(|s| s.total_shielded)
+        .unwrap_or(0);
+
+    guard.frontend_state.scan_results = Some(ScanUiSummary {
+        total_items: guard.last_scanned_items.len(),
+        total_bytes: rules_bytes
+            .saturating_add(dev_bytes)
+            .saturating_add(ghost_bytes),
+        rules_bytes,
+        dev_bytes,
+        ghost_bytes,
+        total_shielded: prev_shielded,
+        registry_count: guard.last_registry_findings.len(),
+    });
 }

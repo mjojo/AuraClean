@@ -23,6 +23,7 @@ tao.workspace = true
 wry.workspace = true
 window-vibrancy.workspace = true
 base64.workspace = true
+jwalk.workspace = true
 
 [build-dependencies]
 winresource.workspace = true
