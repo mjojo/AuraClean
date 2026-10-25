@@ -8,9 +8,10 @@
 **Surgical precision. Zero bloat. Never breaks your operating system.**
 
 [![Author mjojo](https://img.shields.io/badge/Author-mjojo-9333EA?style=flat-square&logo=github)](https://github.com/mjojo)
+[![Version v0.1.1](https://img.shields.io/badge/Release-v0.1.1-4ADE80?style=flat-square)](https://github.com/mjojo/AuraClean/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-4ADE80.svg?style=flat-square)](LICENSE)
 [![Built with Rust](https://img.shields.io/badge/Language-Rust%202024-A855F7.svg?style=flat-square&logo=rust)](https://www.rust-lang.org/)
-[![Framework Tauri](https://img.shields.io/badge/Frontend-Tauri%20v2-22C55E.svg?style=flat-square&logo=tauri)](https://tauri.app/)
+[![UI Engine](https://img.shields.io/badge/UI-Windows%2011%20Mica%20%2B%20WebView2-22C55E.svg?style=flat-square)](https://microsoft.com/windows)
 [![Platform Windows](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D6.svg?style=flat-square&logo=windows)](https://microsoft.com/windows)
 
 [Features](#-key-features) • [Zero-Breakage Guarantee](#-the-zero-breakage-guarantee) • [Architecture](#-architecture) • [Multilingual UI](#-multilingual-interface-i18n) • [Getting Started](#-getting-started) • [Roadmap](#-roadmap)
@@ -31,9 +32,12 @@ Traditional Windows system cleaners have devolved into adware-heavy, aggressive 
 
 AuraClean treats permanent deletion as a last resort. Every operation is governed by strict compile-time and runtime safety barriers:
 
-* **Tiered Time-Capsule Quarantine (Zstandard + SQLite Vault):**
-  * **Tier A (Sensitive Configs, Orphaned AppData, Registry Keys):** Packed on-the-fly into high-speed compressed `.tar.zst` containers (`zstd` level 3) alongside `.reg` and JSON snapshots, indexed in a local SQLite transaction vault (`index.db`) for 1-click rollback.
-  * **Tier B (Massive Reproducible Caches & Build Artifacts):** Multi-gigabyte `target/`, `node_modules/`, and shader caches respect disk quota limits (`Quota Guard`) and store lightweight reconstruction manifests or use instant same-volume staging rather than exhausting free disk space during cleanup.
+* **Selective Time-Capsule Quarantine vs. Direct Delete:**
+  * **Quarantine Vault (`ArchiveToVault`):** Reserved strictly for sensitive system changes, registry snapshots (`.reg` and JSON), crash dumps, startup state changes, and **Ghost Hunter** `AppData` remnants—stream-compressed via `zstd` (level 3) into `vault_{uuid}.tar.zst` and indexed in SQLite (`index.db`) for 1-click rollback.
+  * **Direct Delete (`DirectDelete`):** Temporary files (`%TEMP%`), browser caches, GPU shader caches (`NVIDIA`/`AMD`/`DirectX`), and reproducible developer build artifacts (`target/`, `node_modules/`, `.venv`, `.gradle`) are deleted directly without wasting disk space in the quarantine vault.
+* **Explicit User Permission & Per-Item Cleanup:** AuraClean never deletes anything automatically. Users can either review and authorize a batch cleanup via the **Safety Authorization Modal** or clean any individual rule, dev artifact, Ghost folder, or registry key one by one.
+* **Custom Exclusions Whitelist (`exclusions.json`):** Users can add custom folder paths (including Cyrillic paths), file masks, or domains directly from the **Settings & Exclusions** tab to permanently shield them from all scans.
+* **Full Hidden Folder (`AppData`) & Cyrillic (`UTF-16`) Path Support:** Resolves relocated or localized Windows Known Folders (`Documents` / `Мои документы`, hidden `AppData\Local`, `LocalLow`, `Roaming`, `ProgramData`) via Win32 `SHGetKnownFolderPath` (`UTF-16`) with full Unicode case-folding and intermediate wildcard expansion.
 * **Active File Lock & Process Inspection:** Batch-queries Windows Restart Manager (`RmStartSession` / `RmRegisterResources` / `RmGetList`) and kernel sharing handles (`CreateFileW` with `dwShareMode = 0`) before touching any file. Locked or active files are cleanly skipped.
 * **Cloud Placeholder Guard (OneDrive / iCloud / Dropbox):** Inspects `FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS`, `FILE_ATTRIBUTE_RECALL_ON_OPEN`, and `FILE_ATTRIBUTE_OFFLINE` so cloud-only files are never accidentally hydrated/downloaded during disk scans.
 * **Immutable Whitelists & Authenticode Verification:** Critical OS directories (`WinSxS`, `System32\config`, `DriverStore`), system certificates, and Microsoft-signed binaries (`WinVerifyTrust`) are hardcoded as immutable at compile time.
@@ -65,16 +69,17 @@ No cryptic CLSID lists or inflated "error counts". AuraClean inspects strictly b
 ### 👻 "Ghost Hunter" (Background Uninstaller Watcher)
 A lightweight watcher monitors `Uninstall` registry keys and filesystem events. When a standard Windows uninstaller finishes, AuraClean notifies you of leftover `AppData` caches and orphaned registry keys for 1-click cleanup. When minimized to tray, the WebView2 UI process is destroyed so the background footprint stays under **6 MB RAM**.
 
-### ⏱ Boot-Time Diagnostic Profiler
-Parses Windows Event Logs (`Microsoft-Windows-Diagnostics-Performance/Operational`, Event IDs 100–110) to measure exact millisecond boot impact per application and supports converting heavy startup items into **Delayed Launch (+60s)** scheduled tasks.
+### ⏱ Boot & Startup Manager + 1-Click Report Export
+* Inspects `HKCU` and `HKLM` `Run` startup entries with millisecond boot-impact estimates, allowing 1-click **Disable / Enable** or **Delay +60s** (automatically backed up in the Time-Capsule Vault).
+* Includes a **Space Lens Category Distribution Chart**, live search/filter across all 8 tabs, **RAM Boost** (`GlobalMemoryStatusEx`), and 1-click **HTML & JSON Diagnostic Report Export**.
 
 ---
 
-## 🌍 Multilingual Interface (i18n)
+## 🌍 Multilingual Interface (6 Languages Built-In)
 
-While all source code, engineering documentation, and commit logs are maintained in **English**, the **AuraClean** user interface and declarative TOML rule descriptions are natively **multilingual**:
-* Built-in localization catalogs (`locales/en.json`, `locales/ru.json`, extensible to `de`, `es`, `zh`, etc.).
-* Every TOML cleaning rule and human-readable registry explanation supports localized strings (`[rule.i18n.en]`, `[rule.i18n.ru]`) with instant language switching in the UI without restarting the app.
+While all source code, engineering documentation, and commit logs are maintained in **English**, the **AuraClean** user interface is natively **multilingual** with instant 1-click switching across **6 languages**:
+* **English (`EN`)**, **Russian (`RU`)**, **Ukrainian (`UA` / `UK`)**, **German (`DE`)**, **Spanish (`ES`)**, and **Simplified Chinese (`中文` / `ZH`)** (`locales/*.json`).
+* Clean, distraction-free typography with zero emojis in the application UI and a pure CSS/vector **Cyber-Pulse Reactor** indicator.
 
 ---
 
@@ -117,21 +122,24 @@ AuraClean uses a **Privilege Separation Architecture** across a Cargo Workspace 
 ```text
 AuraClean/
 ├── AuraClean.cmd              # 1-Click Windows desktop launcher (double-click to run)
-├── Cargo.toml                 # Workspace root manifest (Rust 2024)
+├── Cargo.toml                 # Workspace root manifest (Rust 2024, v0.1.1)
 ├── ARCHITECTURE.md            # Complete system & security architecture blueprint
 ├── README.md                  # Project overview & quickstart
+├── .github/workflows/ci.yml   # Automated Windows x86_64 Clippy, Test & Release CI
 ├── assets/
 │   └── brand/                 # Resized mjojo logos & icons (16px..512px + .ico)
-├── locales/                   # UI localization files (en.json, ru.json)
-├── rules/                     # Signed declarative TOML cleaning definitions
-│   ├── system_windows.toml    # Windows temp, crash dumps, update logs
-│   ├── browsers.toml          # Chromium, Firefox, Brave, Edge multi-profile rules
-│   ├── gaming.toml            # Steam, Epic, NVIDIA/AMD shader caches
-│   └── devtools.toml          # Cargo, npm, pip, Docker, IDE caches
+├── dist/
+│   └── AuraClean-v0.1.1-win64.zip # Ready-to-distribute portable Windows x64 release
+├── locales/                   # UI localization catalogs (en, ru, uk, de, es, zh)
+├── rules/                     # 19 declarative TOML cleaning definitions
+│   ├── system_windows.toml    # Windows temp, WER reports, Explorer thumbcache, crash dumps
+│   ├── browsers.toml          # Chrome, Edge, Brave, Yandex, Firefox, Discord, Telegram
+│   ├── gaming.toml            # Steam, NVIDIA/AMD/Direct3D shaders, My Games logs (SaveGames shielded)
+│   └── devtools.toml          # npm, pip, VS Code V8/VSIX, Adobe Media Cache & Figma
 └── crates/
     ├── safety-guard/          # Immutable whitelist, Restart Manager, Time-Capsule Vault
-    ├── ipc-protocol/          # Typed IPC contracts, User SID context, i18n types
-    ├── core-engine/           # TOML rule parser, scanner, registry inspector
+    ├── ipc-protocol/          # Typed IPC contracts, User SID context, 6-language Locale
+    ├── core-engine/           # KnownFolders UTF-16 resolver, jwalk scanner, Registry & Deep scanners
     ├── elevated-service/      # Privileged worker binary
     ├── auraclean-gui/         # Standalone 1-Click Windows 11 Mica/WebView2 GUI (AuraClean.exe)
     └── auraclean-cli/         # CLI & dry-run verification runner
@@ -142,7 +150,7 @@ AuraClean/
 ## 🚦 Getting Started (1-Click Launch)
 
 ### Instant 1-Click Launch (Windows 10 / 11)
-* **Option A (Double-Click Launcher):** Double-click **`AuraClean.cmd`** in the repository root (or run `target\release\AuraClean.exe` directly). It opens the native Windows 11 Mica/WebView2 **mjojo Cyber-Fluent** desktop interface immediately with zero console window and built-in `EN` / `RU` language switching.
+* **Option A (Double-Click Launcher):** Double-click **`AuraClean.cmd`** in the repository root (or run `target\release\AuraClean.exe` or extract `dist\AuraClean-v0.1.1-win64.zip`). It opens the native Windows 11 Mica/WebView2 **mjojo Cyber-Fluent** desktop interface immediately with zero console window and built-in `EN` / `RU` / `UA` / `DE` / `ES` / `中文` language switching.
 * **Option B (VS Code 1-Click):** Press **`F5`** or **`Ctrl+Shift+B`** (`Launch AuraClean (1-Click GUI)`).
 * **Option C (Cargo Default Run):**
   ```powershell
@@ -155,22 +163,23 @@ AuraClean/
 # Verify compilation and run the safety & quarantine test suite
 cargo test --workspace
 
-# Run the CLI prototype in safe dry-run mode (English or Russian UI output)
+# Run the CLI prototype in safe dry-run mode (English, Russian, or Ukrainian output)
 cargo run -p auraclean-cli -- --lang en status
 cargo run -p auraclean-cli -- --lang ru scan --dry-run
+cargo run -p auraclean-cli -- --lang uk status
 ```
 
 ---
 
-## 🗺 Roadmap
+## 🗺 Roadmap (v0.1.1 Complete)
 
 - [x] **Sprint 1: Safety Guard Core** — Immutable whitelists, Cloud File Recall Guard, 24h File Age Guard, Win32 Restart Manager lock inspector, Zstandard Time-Capsule Quarantine & SQLite Vault with 1-click rollback.
-- [ ] **Sprint 2: File & TOML Engine** — Multi-threaded `jwalk` rule scanner, NTFS `$MFT` record parser with ReFS fallback, Ed25519 rule signature verifier.
-- [ ] **Sprint 3: Registry Inspector** — Command-line heuristic parser, removable drive awareness (`GetDriveTypeW`), localized human-readable explanations.
-- [ ] **Sprint 4: Service & Hardened IPC** — SDDL Named Pipe server, User SID context impersonation, "Ghost Hunter" uninstaller watcher.
-- [ ] **Sprint 5: Tauri v2 UI/UX (`mjojo Cyber-Fluent`)** — Mica Alt windowing, multilingual UI (`en`/`ru`), Bento dashboard, interactive Sunburst disk map.
-- [ ] **Sprint 6: Dev & Gamer Modules** — Stale `node_modules`/`target` detector, multi-drive `libraryfolders.vdf` parser, Boot-Time Event Log profiler.
-- [ ] **Sprint 7: QA & Signed Release** — Windows Sandbox automated test harness, Azure Trusted Signing pipeline, installer packaging.
+- [x] **Sprint 2: File & TOML Engine** — Multi-threaded `jwalk` rule scanner, UTF-16 `SHGetKnownFolderPath` resolver for hidden `AppData` and Cyrillic `Documents` (`Мои документы`), 19 built-in rules.
+- [x] **Sprint 3: Registry Inspector** — Command-line heuristic parser, removable drive awareness (`GetDriveTypeW`), localized human-readable explanations.
+- [x] **Sprint 4: Service & Ghost Hunter** — Privileged service handler, Steam multi-drive `libraryfolders.vdf` resolver, and "Ghost Hunter" uninstalled app remnant detector.
+- [x] **Sprint 5: `mjojo Cyber-Fluent` 1-Click UI** — Windows 11 Mica/Acrylic windowing, pure CSS/vector Cyber-Pulse Reactor, 6 languages (`EN`/`RU`/`UA`/`DE`/`ES`/`ZH`), Space Lens category distribution chart, live search filter, and Custom Exclusions Whitelist.
+- [x] **Sprint 6: Dev, Gamer & Startup Modules** — Stale `node_modules`/`target`/`.venv` detector (`DirectDelete`), SaveGame shield, RAM Boost, and interactive Startup manager (`Disable` / `Delay +60s`).
+- [x] **Sprint 7: CI/CD, Diagnostic Export & Portable Release** — 1-click HTML/JSON report export, GitHub Actions CI workflow, and portable `dist/AuraClean-v0.1.1-win64.zip` bundle.
 
 ---
 
