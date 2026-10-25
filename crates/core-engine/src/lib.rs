@@ -9,10 +9,11 @@ pub mod registry_inspector;
 pub use deep_scanners::{
     DeepFolderInsight, DevArtifactEntry, GhostLeftoverEntry, SpaceLensFileEntry, StartupEntry,
     SystemMemoryTelemetry, collect_installed_software_signatures, contains_cyrillic,
-    get_system_memory_telemetry, looks_like_savegame, optimize_standby_and_working_memory,
-    parse_steam_library_vdf_paths, scan_ghost_uninstalled_leftovers,
-    scan_hidden_appdata_and_documents, scan_space_lens_top_files, scan_stale_dev_artifacts,
-    scan_startup_entries,
+    delay_hkcu_startup_entry_60s, get_system_memory_telemetry, looks_like_savegame,
+    optimize_standby_and_working_memory, parse_steam_library_vdf_paths,
+    scan_ghost_uninstalled_leftovers, scan_hidden_appdata_and_documents,
+    scan_space_lens_top_files, scan_stale_dev_artifacts, scan_startup_entries,
+    toggle_hkcu_startup_entry,
 };
 pub use known_folders::{
     expand_known_and_env_vars, expand_wildcard_directories, is_hidden_entry, query_known_folder,

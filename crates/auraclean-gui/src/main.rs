@@ -9,16 +9,16 @@
 use anyhow::Result;
 use core_engine::{
     CleaningRule, DeepFolderInsight, DevArtifactEntry, GhostLeftoverEntry, RegistryFinding,
-    SpaceLensFileEntry, StartupEntry, SystemMemoryTelemetry, get_system_memory_telemetry,
-    load_rules_from_dir, optimize_standby_and_working_memory, resolve_base_directories,
-    scan_directory_with_rule, scan_ghost_uninstalled_leftovers,
+    SpaceLensFileEntry, StartupEntry, SystemMemoryTelemetry, delay_hkcu_startup_entry_60s,
+    get_system_memory_telemetry, load_rules_from_dir, optimize_standby_and_working_memory,
+    resolve_base_directories, scan_directory_with_rule, scan_ghost_uninstalled_leftovers,
     scan_hidden_appdata_and_documents, scan_safe_registry_zones, scan_space_lens_top_files,
-    scan_stale_dev_artifacts, scan_startup_entries,
+    scan_stale_dev_artifacts, scan_startup_entries, toggle_hkcu_startup_entry,
 };
 use ipc_protocol::{Locale, ScannedItem, VaultTransactionSummary};
 use safety_guard::{
     QuarantineCandidate, RegistrySnapshotEntry, TimeCapsuleVault, VaultConfig,
-    evaluate_path_whitelist,
+    evaluate_path_whitelist, is_file_exclusively_openable,
 };
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -719,6 +719,144 @@ fn handle_ui_command(
                     Locale::Ru => format!(
                         "Ключ реестра сохранен в снимок .reg Time-Capsule ({})",
                         &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                };
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        "open_in_explorer" => {
+            let Some(ref target_path) = msg.target_id else {
+                return;
+            };
+            let p = PathBuf::from(target_path);
+            if p.exists() {
+                if p.is_file() {
+                    let _ = std::process::Command::new("explorer.exe")
+                        .arg(format!("/select,{}", p.display()))
+                        .spawn();
+                } else {
+                    let _ = std::process::Command::new("explorer.exe")
+                        .arg(p.as_os_str())
+                        .spawn();
+                }
+            }
+        }
+        "delete_space_lens_file" => {
+            let Some(ref target_path) = msg.target_id else {
+                return;
+            };
+            let p = PathBuf::from(target_path);
+            if evaluate_path_whitelist(&p).is_allowed()
+                && p.exists()
+                && p.is_file()
+                && is_file_exclusively_openable(&p)
+                && std::fs::remove_file(&p).is_ok()
+            {
+                let mut guard = shared.lock().unwrap();
+                guard
+                    .frontend_state
+                    .space_lens_files
+                    .retain(|f| &f.full_path != target_path);
+
+                let toast = match locale {
+                    Locale::En => format!("Deleted large file: {}", p.display()),
+                    Locale::Ru => format!("Удален крупный файл: {}", p.display()),
+                };
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        "toggle_startup" => {
+            let Some(ref entry_id) = msg.target_id else {
+                return;
+            };
+            let vault_dir = { shared.lock().unwrap().vault_dir.clone() };
+            if let Ok((name, orig_cmd, new_status)) = toggle_hkcu_startup_entry(entry_id) {
+                let snap = RegistrySnapshotEntry {
+                    root_hive: "HKEY_CURRENT_USER".to_string(),
+                    subkey_path: r"Software\Microsoft\Windows\CurrentVersion\Run".to_string(),
+                    value_name: Some(name.clone()),
+                    value_type: "REG_SZ".to_string(),
+                    value_data: orig_cmd,
+                    human_reason: format!("Startup entry '{name}' toggled to {new_status}"),
+                };
+                if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)) {
+                    let _ = vault.quarantine_batch(&[], &[snap]);
+                }
+
+                let updated_startup = scan_startup_entries();
+                let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
+                let mut guard = shared.lock().unwrap();
+                guard.frontend_state.startup_entries = updated_startup;
+                if let Some(v) = vault {
+                    guard.frontend_state.transactions = v.list_transactions().unwrap_or_default();
+                    guard.frontend_state.vault_bytes =
+                        v.current_vault_footprint_bytes().unwrap_or(0);
+                }
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Startup '{}' is now {} (backed up in Time-Capsule)",
+                        name, new_status
+                    ),
+                    Locale::Ru => format!(
+                        "Автозапуск «{}» переведен в режим {} (снимок в Time-Capsule)",
+                        name, new_status
+                    ),
+                };
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        "delay_startup_60s" => {
+            let Some(ref entry_id) = msg.target_id else {
+                return;
+            };
+            let vault_dir = { shared.lock().unwrap().vault_dir.clone() };
+            if let Ok((name, orig_cmd, new_status)) = delay_hkcu_startup_entry_60s(entry_id) {
+                let snap = RegistrySnapshotEntry {
+                    root_hive: "HKEY_CURRENT_USER".to_string(),
+                    subkey_path: r"Software\Microsoft\Windows\CurrentVersion\Run".to_string(),
+                    value_name: Some(name.clone()),
+                    value_type: "REG_SZ".to_string(),
+                    value_data: orig_cmd,
+                    human_reason: format!("Startup entry '{name}' set to {new_status}"),
+                };
+                if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)) {
+                    let _ = vault.quarantine_batch(&[], &[snap]);
+                }
+
+                let updated_startup = scan_startup_entries();
+                let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
+                let mut guard = shared.lock().unwrap();
+                guard.frontend_state.startup_entries = updated_startup;
+                if let Some(v) = vault {
+                    guard.frontend_state.transactions = v.list_transactions().unwrap_or_default();
+                    guard.frontend_state.vault_bytes =
+                        v.current_vault_footprint_bytes().unwrap_or(0);
+                }
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Startup '{}' set to {} (backed up in Time-Capsule)",
+                        name, new_status
+                    ),
+                    Locale::Ru => format!(
+                        "Автозапуск «{}» переведен в режим {} (снимок в Time-Capsule)",
+                        name, new_status
                     ),
                 };
                 if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {

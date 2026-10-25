@@ -64,3 +64,47 @@ description = "Diagnostic game logs and crash dumps inside My Documents (includi
 name = "Мои Документы — Логи и дампы игр (Сохранения защищены 🛡)"
 description = "Логи и дампы вылетов игр в папке «Мои документы» (с поддержкой кириллицы). Файлы сохранений (SaveGames) и настройки строго защищены."
 
+[[rule]]
+id = "steam_client_caches"
+category = "gaming"
+safety_level = "Green"
+quarantine_tier = "DirectDelete"
+detect_processes = ["steam.exe"]
+min_age_hours = 12
+paths = [
+    "%LOCALAPPDATA%\\Steam\\htmlcache\\Cache\\*",
+    "%LOCALAPPDATA%\\Steam\\htmlcache\\Code Cache\\*",
+    "%LOCALAPPDATA%\\Steam\\htmlcache\\GPUCache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Steam Client — Store & Overlay HTML/GPU Cache"
+description = "Embedded Chromium cache used by the Steam Store and in-game overlay. Game installations and saves are untouched."
+
+[rule.i18n.ru]
+name = "Steam — Кэш магазина и внутриигрового оверлея"
+description = "Временный кэш встроенного браузера Steam в скрытой папке LocalAppData. Игры и сохранения не затрагиваются."
+
+[[rule]]
+id = "amd_radeon_shader_cache"
+category = "gaming"
+safety_level = "Yellow"
+quarantine_tier = "DirectDelete"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\AMD\\DxCache\\*",
+    "%LOCALAPPDATA%\\AMD\\DxcCache\\*",
+    "%LOCALAPPDATA%\\AMD\\GLCache\\*",
+    "%LOCALAPPDATA%\\AMD\\VkCache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "AMD Radeon — DirectX, Vulkan & OpenGL Shader Cache"
+description = "Compiled GPU shader pipelines for AMD Radeon graphics cards. Deleted directly; games recompile as needed."
+
+[rule.i18n.ru]
+name = "AMD Radeon — Кэш шейдеров DirectX, Vulkan и OpenGL"
+description = "Скомпилированные шейдеры видеокарт AMD Radeon. Удаляются напрямую; пересоздаются играми автоматически."
+

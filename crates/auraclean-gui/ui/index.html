@@ -871,9 +871,13 @@
         modal_subtitle: "AuraClean never cleans without your explicit permission. Uncheck any category you wish to keep:",
         modal_note: "🟢 Green items are checked by default. 🟡 Yellow (shader/dev caches) are unchecked by default.",
         modal_cancel: "Cancel",
-        modal_confirm: "✅ Authorize & Move to Time-Capsule",
+        modal_confirm: "✅ Authorize & Execute",
         reg_checkbox_title: "Orphaned Registry Keys (.reg + JSON Snapshot)",
-        btn_clean_single: "🧹 Clean Item"
+        btn_clean_single: "🧹 Clean Item",
+        btn_open_explorer: "📂 Open Folder",
+        btn_disable_startup: "⏸ Disable",
+        btn_enable_startup: "▶ Enable",
+        btn_delay_60s: "⏱ Delay +60s"
       },
       ru: {
         nav_dashboard: "⚡ Пульс Системы",
@@ -914,9 +918,13 @@
         modal_subtitle: "AuraClean ничего не трогает без вашего явного согласия. Отметьте категории для переноса в Капсулу Времени:",
         modal_note: "🟢 Безопасные категории отмечены по умолчанию. 🟡 Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
         modal_cancel: "Отмена",
-        modal_confirm: "✅ Разрешить и Поместить в Карантин",
+        modal_confirm: "✅ Разрешить и Выполнить",
         reg_checkbox_title: "Осиротевшие ключи реестра (Снимок .reg + JSON)",
-        btn_clean_single: "🧹 Очистить отдельно"
+        btn_clean_single: "🧹 Очистить отдельно",
+        btn_open_explorer: "📂 Папка",
+        btn_disable_startup: "⏸ Выключить",
+        btn_enable_startup: "▶ Включить",
+        btn_delay_60s: "⏱ Отложить +60с"
       }
     };
 
@@ -1061,9 +1069,9 @@
       document.getElementById('btn-modal-cancel').textContent = t.modal_cancel;
       document.getElementById('btn-modal-confirm').textContent = t.modal_confirm;
 
-      const isDirect = cmd === 'clean_single_dev';
+      const isDirect = cmd === 'clean_single_dev' || cmd === 'delete_space_lens_file';
       const modeTag = isDirect
-        ? `<span class="badge badge-Green">🗑 Direct Delete (Reproducible)</span>`
+        ? `<span class="badge badge-Green">🗑 Direct Delete</span>`
         : `<span class="badge badge-Purple">⏳ Time-Capsule Quarantine</span>`;
       const modeDesc = isDirect
         ? (currentLang === 'ru'
@@ -1122,6 +1130,10 @@
         approved_rule_ids: checkedRules,
         include_registry: includeRegistry
       });
+    }
+
+    function openInExplorer(rawPath) {
+      sendIpc('open_in_explorer', { target_id: rawPath });
     }
 
     function triggerRestore(txId) {
@@ -1267,6 +1279,7 @@
           const hiddenTag = df.isHidden ? `<span class="badge badge-Purple">HIDDEN</span>` : '';
           const cyrTag = df.hasCyrillic ? `<span class="badge badge-Green">КИРИЛЛИЦА / UTF-16</span>` : '';
           const saveTag = df.hasProtectedSavegames ? `<span class="badge badge-Red">🛡 SAVEGAME SHIELDED</span>` : '';
+          const escapedPath = df.fullPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -1277,7 +1290,10 @@
               <div class="rule-desc">${note}</div>
               <div class="sample-path">${df.fullPath}</div>
             </div>
-            <div class="rule-metric">${formatBytes(df.sizeBytes)} (${df.fileCount} files)</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="rule-metric">${formatBytes(df.sizeBytes)} (${df.fileCount} files)</div>
+              <button class="btn-item-clean" onclick="openInExplorer('${escapedPath}')">${t.btn_open_explorer}</button>
+            </div>
           `;
           listEl.appendChild(row);
         });
@@ -1296,6 +1312,8 @@
           row.className = 'rule-row';
           const hiddenTag = f.isHidden ? `<span class="badge badge-Purple">HIDDEN</span>` : '';
           const cyrTag = f.hasCyrillic ? `<span class="badge badge-Green">UTF-16</span>` : '';
+          const escapedPath = f.fullPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const safeName = f.fileName.replace(/'/g, "");
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -1305,7 +1323,11 @@
               </div>
               <div class="sample-path">${f.fullPath}</div>
             </div>
-            <div class="rule-metric">${f.daysSinceModified}d ago</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="rule-metric">${f.daysSinceModified}d ago</div>
+              <button class="btn-item-clean" onclick="openInExplorer('${escapedPath}')">${t.btn_open_explorer}</button>
+              <button class="btn-item-clean" onclick="requestSingleItemAction('delete_space_lens_file', '${escapedPath}', '${safeName}', '${formatBytes(f.sizeBytes)}')">${t.btn_clean_single}</button>
+            </div>
           `;
           listEl.appendChild(row);
         });
@@ -1318,16 +1340,30 @@
         entries.forEach(se => {
           const row = document.createElement('div');
           row.className = 'rule-row';
-          const badgeClass = se.impactLevel === 'High' ? 'badge-Red' : (se.impactLevel === 'Medium' ? 'badge-Yellow' : 'badge-Green');
+          const badgeClass = se.status === 'Disabled'
+            ? 'badge-Purple'
+            : (se.impactLevel === 'High' ? 'badge-Red' : (se.impactLevel === 'Medium' ? 'badge-Yellow' : 'badge-Green'));
+          const escapedId = se.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          const safeName = se.name.replace(/'/g, "");
+          const toggleLabel = se.status === 'Disabled' ? t.btn_enable_startup : t.btn_disable_startup;
+          const controlsHtml = se.canModify
+            ? `
+              <button class="btn-item-clean" onclick="requestSingleItemAction('toggle_startup', '${escapedId}', '${safeName} (${toggleLabel})', 'Registry HKCU')">${toggleLabel}</button>
+              ${se.status !== 'Disabled' ? `<button class="btn-item-clean" onclick="requestSingleItemAction('delay_startup_60s', '${escapedId}', '${safeName} (+60s)', 'Registry HKCU')">${t.btn_delay_60s}</button>` : ''}
+            `
+            : `<span class="badge badge-Purple">HKLM (System)</span>`;
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
-                <span class="badge ${badgeClass}">${se.impactLevel} (+${se.estimatedImpactMs} ms)</span>
+                <span class="badge ${badgeClass}">${se.impactLevel} (${se.estimatedImpactMs > 0 ? '+' + se.estimatedImpactMs + ' ms' : se.status})</span>
                 <span>${se.name}</span>
               </div>
               <div class="sample-path">${se.command}</div>
             </div>
-            <div class="rule-metric">${se.location}</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div class="rule-metric">${se.location}</div>
+              ${controlsHtml}
+            </div>
           `;
           listEl.appendChild(row);
         });

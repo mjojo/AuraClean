@@ -45,3 +45,111 @@ description = "Temporary browser cache files across all Edge profiles. Deleted d
 [rule.i18n.ru]
 name = "Microsoft Edge — Кэш веб-страниц и скриптов"
 description = "Временные файлы кэша во всех профилях Edge. Удаляются напрямую; авторизация и история браузера сохраняются."
+
+[[rule]]
+id = "brave_web_cache"
+category = "browsers"
+safety_level = "Green"
+quarantine_tier = "DirectDelete"
+detect_processes = ["brave.exe"]
+min_age_hours = 2
+paths = [
+    "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Cache\\Cache_Data\\*",
+    "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\Code Cache\\*",
+    "%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\User Data\\*\\GPUCache\\*"
+]
+exclude_patterns = ["*.lock", "index"]
+
+[rule.i18n.en]
+name = "Brave Browser — Web, Code & GPU Cache"
+description = "Temporary cached images, compiled JS, and GPU shaders across all Brave profiles. Wallets, shields, and logins remain untouched."
+
+[rule.i18n.ru]
+name = "Brave Browser — Веб-кэш, скрипты и GPUCache"
+description = "Временные файлы кэша во всех профилях Brave. Кошельки, пароли и активные сессии не затрагиваются."
+
+[[rule]]
+id = "yandex_browser_cache"
+category = "browsers"
+safety_level = "Green"
+quarantine_tier = "DirectDelete"
+detect_processes = ["browser.exe"]
+min_age_hours = 2
+paths = [
+    "%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\*\\Cache\\Cache_Data\\*",
+    "%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\*\\Code Cache\\*",
+    "%LOCALAPPDATA%\\Yandex\\YandexBrowser\\User Data\\*\\GPUCache\\*"
+]
+exclude_patterns = ["*.lock", "index"]
+
+[rule.i18n.en]
+name = "Yandex Browser — Web & Media Cache"
+description = "Temporary web and media cache across all Yandex Browser profiles. Deleted directly; passwords and tabs remain intact."
+
+[rule.i18n.ru]
+name = "Яндекс Браузер — Кэш веб-страниц и медиа"
+description = "Временные копии страниц и медиафайлов во всех профилях Яндекс Браузера. Пароли и вкладки сохраняются."
+
+[[rule]]
+id = "firefox_web_cache"
+category = "browsers"
+safety_level = "Green"
+quarantine_tier = "DirectDelete"
+detect_processes = ["firefox.exe"]
+min_age_hours = 2
+paths = [
+    "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\cache2\\entries\\*",
+    "%LOCALAPPDATA%\\Mozilla\\Firefox\\Profiles\\*\\startupCache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Mozilla Firefox — Disk & Startup Cache"
+description = "Cached web entries and startup cache across all Firefox profiles. Deleted directly without touching bookmarks or logins."
+
+[rule.i18n.ru]
+name = "Mozilla Firefox — Дисковый и стартовый кэш"
+description = "Кэшированные элементы страниц во всех профилях Firefox. Закладки, куки и пароли не затрагиваются."
+
+[[rule]]
+id = "discord_app_cache"
+category = "browsers"
+safety_level = "Green"
+quarantine_tier = "DirectDelete"
+detect_processes = ["Discord.exe"]
+min_age_hours = 6
+paths = [
+    "%APPDATA%\\discord\\Cache\\Cache_Data\\*",
+    "%APPDATA%\\discord\\Code Cache\\*",
+    "%APPDATA%\\discord\\GPUCache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Discord — Media, Code & GPU Cache"
+description = "Accumulated images, GIFs, and Chromium GPU caches inside hidden Roaming AppData. Your Discord login is preserved."
+
+[rule.i18n.ru]
+name = "Discord — Кэш картинок, GIF и GPU (Скрытый AppData)"
+description = "Накопленные превью картинок, видео и кэш Chromium в скрытой папке Roaming. Авторизация в Discord сохраняется."
+
+[[rule]]
+id = "telegram_media_cache"
+category = "browsers"
+safety_level = "Yellow"
+quarantine_tier = "DirectDelete"
+detect_processes = ["Telegram.exe"]
+min_age_hours = 24
+paths = [
+    "%APPDATA%\\Telegram Desktop\\tdata\\user_data\\cache\\*",
+    "%APPDATA%\\Telegram Desktop\\tdata\\user_data\\media_cache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Telegram Desktop — Downloaded Media & Web Cache"
+description = "Cached chat media and web previews inside Telegram Desktop. Cloud messages stay in Telegram and re-download on click."
+
+[rule.i18n.ru]
+name = "Telegram Desktop — Кэш медиафайлов и превью"
+description = "Кэшированные фото и видео из чатов Telegram. Сами переписки и аккаунт не затрагиваются (файлы подгружаются из облака)."

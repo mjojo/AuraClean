@@ -44,3 +44,47 @@ description = "Cached Python wheels and HTTP downloads stored by pip."
 [rule.i18n.ru]
 name = "Кэш пакетов Python (pip wheels & HTTP)"
 description = "Кэшированные пакеты wheel и загрузки пакетного менеджера pip."
+
+[[rule]]
+id = "vscode_cached_data"
+category = "devtools"
+safety_level = "Green"
+quarantine_tier = "DirectDelete"
+detect_processes = ["Code.exe"]
+min_age_hours = 24
+paths = [
+    "%APPDATA%\\Code\\Cache\\Cache_Data\\*",
+    "%APPDATA%\\Code\\CachedData\\*",
+    "%APPDATA%\\Code\\CachedExtensionVSIXs\\*",
+    "%APPDATA%\\Code\\GPUCache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Visual Studio Code — V8 Bytecode & Extension VSIX Cache"
+description = "Old V8 compiled bytecode and downloaded VSIX installer packages in Roaming AppData. Extensions and settings remain intact."
+
+[rule.i18n.ru]
+name = "VS Code — Кэш байткода V8 и установщиков расширений (VSIX)"
+description = "Старый кэш компиляции и скачанные архивы расширений VS Code. Установленные плагины и настройки полностью сохраняются."
+
+[[rule]]
+id = "adobe_media_cache"
+category = "devtools"
+safety_level = "Yellow"
+quarantine_tier = "DirectDelete"
+min_age_hours = 48
+paths = [
+    "%APPDATA%\\Adobe\\Common\\Media Cache Files\\*",
+    "%APPDATA%\\Adobe\\Common\\Media Cache\\*",
+    "%LOCALAPPDATA%\\Figma\\DesktopProfile\\*\\Cache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Adobe Premiere / After Effects & Figma Media Cache"
+description = "Multi-gigabyte audio peak files (.pek), conformed audio (.cfa), and Figma desktop render caches."
+
+[rule.i18n.ru]
+name = "Adobe Premiere / After Effects и Figma — Медиа-кэш"
+description = "Гигабайтные временные файлы рендера (.pek, .cfa) и кэш макетов Figma. Проекты не затрагиваются."

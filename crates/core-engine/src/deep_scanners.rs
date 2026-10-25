@@ -20,7 +20,7 @@ use std::time::{Duration, SystemTime};
 use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 use windows::Win32::UI::Shell::FOLDERID_Profile;
 use winreg::RegKey;
-use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ};
+use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE};
 
 /// Summary entry for a scanned hidden `AppData` or `Documents` ("Мои документы") directory.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,13 +51,16 @@ pub struct SpaceLensFileEntry {
     pub has_cyrillic: bool,
 }
 
-/// Startup program entry with estimated boot impact.
+/// Startup program entry with estimated boot impact and interactive state (`Active` / `Disabled` / `Delayed60s`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StartupEntry {
+    pub id: String,
     pub name: String,
     pub command: String,
     pub location: String,
+    pub status: String,
+    pub can_modify: bool,
     pub file_exists: bool,
     pub estimated_impact_ms: u32,
     pub impact_level: String,
@@ -374,31 +377,34 @@ pub fn scan_space_lens_top_files(min_size_bytes: u64, limit: usize) -> Vec<Space
     results
 }
 
-/// Inspects Windows Startup entries (`HKCU\...\Run` and `HKLM\...\Run`) and computes estimated
-/// boot time impact in milliseconds.
+/// Inspects Windows Startup entries (`HKCU\...\Run`, `HKLM\...\Run`, and `HKCU\Software\AuraClean\DisabledStartup`)
+/// and computes estimated boot time impact in milliseconds.
 pub fn scan_startup_entries() -> Vec<StartupEntry> {
     let mut list = Vec::new();
     let run_path = r"Software\Microsoft\Windows\CurrentVersion\Run";
+    let disabled_path = r"Software\AuraClean\DisabledStartup";
 
-    for (hive_label, root_key) in [
-        ("HKCU\\...\\Run", RegKey::predef(HKEY_CURRENT_USER)),
-        ("HKLM\\...\\Run", RegKey::predef(HKEY_LOCAL_MACHINE)),
+    for (hive_label, can_mod, root_key) in [
+        ("HKCU\\...\\Run", true, RegKey::predef(HKEY_CURRENT_USER)),
+        ("HKLM\\...\\Run", false, RegKey::predef(HKEY_LOCAL_MACHINE)),
     ] {
         if let Ok(sub) = root_key.open_subkey_with_flags(run_path, KEY_READ) {
             for (name, val) in sub.enum_values().flatten() {
                 let cmd = val.to_string();
+                let is_delayed = cmd.to_lowercase().contains("timeout /t 60");
                 let exe_opt =
                     crate::registry_inspector::extract_executable_path_from_registry_string(&cmd);
                 let exists = exe_opt.as_ref().map(|p| p.exists()).unwrap_or(true);
 
-                // Estimate boot impact based on binary size and known heavy updater signatures
                 let size_mb = exe_opt
                     .as_ref()
                     .and_then(|p| std::fs::metadata(p).ok())
                     .map(|m| m.len() / (1024 * 1024))
                     .unwrap_or(5);
                 let estimated_ms = ((size_mb as u32).saturating_mul(35)).clamp(120, 2400);
-                let impact_level = if estimated_ms >= 900 {
+                let impact_level = if is_delayed {
+                    "Delayed (+60s)"
+                } else if estimated_ms >= 900 {
                     "High"
                 } else if estimated_ms >= 400 {
                     "Medium"
@@ -407,19 +413,97 @@ pub fn scan_startup_entries() -> Vec<StartupEntry> {
                 };
 
                 list.push(StartupEntry {
+                    id: format!("{}::{}", hive_label, name),
                     name,
                     command: cmd,
                     location: hive_label.to_string(),
+                    status: if is_delayed {
+                        "Delayed60s".to_string()
+                    } else {
+                        "Active".to_string()
+                    },
+                    can_modify: can_mod,
                     file_exists: exists,
-                    estimated_impact_ms: estimated_ms,
+                    estimated_impact_ms: if is_delayed { 0 } else { estimated_ms },
                     impact_level: impact_level.to_string(),
                 });
             }
         }
     }
 
+    // Also include entries previously disabled via AuraClean so the user can re-enable them in 1 click
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    if let Ok(disabled_sub) = hkcu.open_subkey_with_flags(disabled_path, KEY_READ) {
+        for (name, val) in disabled_sub.enum_values().flatten() {
+            let cmd = val.to_string();
+            list.push(StartupEntry {
+                id: format!("DISABLED::{}", name),
+                name,
+                command: cmd,
+                location: "HKCU (Disabled by AuraClean)".to_string(),
+                status: "Disabled".to_string(),
+                can_modify: true,
+                file_exists: true,
+                estimated_impact_ms: 0,
+                impact_level: "Disabled".to_string(),
+            });
+        }
+    }
+
     list.sort_by_key(|b| std::cmp::Reverse(b.estimated_impact_ms));
     list
+}
+
+/// Toggles a user startup entry between `Active` (`HKCU\...\Run`) and `Disabled`
+/// (`HKCU\Software\AuraClean\DisabledStartup`), returning `(entry_name, original_command, new_status)`.
+pub fn toggle_hkcu_startup_entry(entry_id: &str) -> anyhow::Result<(String, String, String)> {
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run_path = r"Software\Microsoft\Windows\CurrentVersion\Run";
+    let disabled_path = r"Software\AuraClean\DisabledStartup";
+
+    if let Some(name) = entry_id.strip_prefix("DISABLED::") {
+        // Re-enable: move from DisabledStartup back to HKCU\...\Run
+        let disabled_key = hkcu.open_subkey_with_flags(disabled_path, KEY_READ | KEY_SET_VALUE)?;
+        let cmd: String = disabled_key.get_value(name)?;
+        let (run_key, _) = hkcu.create_subkey(run_path)?;
+        run_key.set_value(name, &cmd)?;
+        let _ = disabled_key.delete_value(name);
+        Ok((name.to_string(), cmd, "Active".to_string()))
+    } else if let Some(name) = entry_id.strip_prefix("HKCU\\...\\Run::") {
+        // Disable: move from HKCU\...\Run to HKCU\Software\AuraClean\DisabledStartup
+        let run_key = hkcu.open_subkey_with_flags(run_path, KEY_READ | KEY_SET_VALUE)?;
+        let cmd: String = run_key.get_value(name)?;
+        let (disabled_key, _) = hkcu.create_subkey(disabled_path)?;
+        disabled_key.set_value(name, &cmd)?;
+        run_key.delete_value(name)?;
+        Ok((name.to_string(), cmd, "Disabled".to_string()))
+    } else {
+        anyhow::bail!("Only HKCU startup entries can be modified without elevation")
+    }
+}
+
+/// Wraps an active `HKCU\...\Run` startup command in a 60-second delayed background launch
+/// (`cmd.exe /c "timeout /t 60 /nobreak >nul & start \"\" ..."`), or unwraps it back to immediate launch.
+pub fn delay_hkcu_startup_entry_60s(entry_id: &str) -> anyhow::Result<(String, String, String)> {
+    let Some(name) = entry_id.strip_prefix("HKCU\\...\\Run::") else {
+        anyhow::bail!("Only active HKCU startup entries support 60s delay");
+    };
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let run_path = r"Software\Microsoft\Windows\CurrentVersion\Run";
+    let run_key = hkcu.open_subkey_with_flags(run_path, KEY_READ | KEY_SET_VALUE)?;
+    let current_cmd: String = run_key.get_value(name)?;
+
+    let prefix = r#"cmd.exe /c "timeout /t 60 /nobreak >nul & start "" "#;
+    let (new_cmd, new_status) = if let Some(stripped) = current_cmd.strip_prefix(prefix) {
+        let restored = stripped.strip_suffix('"').unwrap_or(stripped).to_string();
+        (restored, "Active".to_string())
+    } else {
+        let wrapped = format!(r#"{prefix}{}""#, current_cmd);
+        (wrapped, "Delayed60s".to_string())
+    };
+
+    run_key.set_value(name, &new_cmd)?;
+    Ok((name.to_string(), current_cmd, new_status))
 }
 
 /// Queries live Windows physical RAM metrics via `GlobalMemoryStatusEx`.
