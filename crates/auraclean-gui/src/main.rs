@@ -97,6 +97,7 @@ struct FrontendState {
     startup_entries: Vec<StartupEntry>,
     dev_artifacts: Vec<DevArtifactEntry>,
     ghost_leftovers: Vec<GhostLeftoverEntry>,
+    custom_exclusions: Vec<String>,
     memory_telemetry: SystemMemoryTelemetry,
     scan_results: Option<ScanUiSummary>,
     transactions: Vec<VaultTransactionSummary>,
@@ -117,6 +118,45 @@ fn default_vault_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
         .join("AuraClean")
         .join("Vault")
+}
+
+fn exclusions_file_path(vault_dir: &std::path::Path) -> PathBuf {
+    vault_dir
+        .parent()
+        .unwrap_or(vault_dir)
+        .join("exclusions.json")
+}
+
+fn load_custom_exclusions(vault_dir: &std::path::Path) -> Vec<String> {
+    let path = exclusions_file_path(vault_dir);
+    if let Ok(raw) = std::fs::read_to_string(&path)
+        && let Ok(list) = serde_json::from_str::<Vec<String>>(&raw)
+    {
+        return list;
+    }
+    vec![
+        "github.com".to_string(),
+        "telegram.org".to_string(),
+        r"Documents\My Games\SaveGames".to_string(),
+    ]
+}
+
+fn save_custom_exclusions(vault_dir: &std::path::Path, exclusions: &[String]) {
+    let path = exclusions_file_path(vault_dir);
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(raw) = serde_json::to_string_pretty(exclusions) {
+        let _ = std::fs::write(path, raw);
+    }
+}
+
+fn is_excluded_by_user(path_str: &str, exclusions: &[String]) -> bool {
+    let lower_path = path_str.to_lowercase();
+    exclusions.iter().any(|ex| {
+        let trimmed = ex.trim().to_lowercase();
+        !trimmed.is_empty() && lower_path.contains(&trimmed)
+    })
 }
 
 fn build_rule_views(rules: &[CleaningRule]) -> Vec<RuleUiView> {
@@ -155,6 +195,7 @@ fn main() -> Result<()> {
         startup_entries: scan_startup_entries(),
         dev_artifacts: Vec::new(),
         ghost_leftovers: Vec::new(),
+        custom_exclusions: load_custom_exclusions(&vault_dir),
         memory_telemetry: get_system_memory_telemetry(),
         scan_results: None,
         transactions: vault.list_transactions().unwrap_or_default(),
@@ -238,9 +279,13 @@ fn handle_ui_command(
 
     match msg.cmd.as_str() {
         "scan" => {
-            let (rules, vault_dir) = {
+            let (rules, vault_dir, exclusions) = {
                 let guard = shared.lock().unwrap();
-                (guard.rules.clone(), guard.vault_dir.clone())
+                (
+                    guard.rules.clone(),
+                    guard.vault_dir.clone(),
+                    guard.frontend_state.custom_exclusions.clone(),
+                )
             };
 
             let mut all_items = Vec::new();
@@ -256,18 +301,24 @@ fn handle_ui_command(
 
                 for dir in dirs {
                     let rep = scan_directory_with_rule(&dir, rule, locale, 50_000);
-                    rule_count += rep.items.len();
-                    rule_bytes += rep.total_reclaimable_bytes();
+                    let mut filtered_items = Vec::with_capacity(rep.items.len());
+                    for item in rep.items {
+                        if is_excluded_by_user(&item.path.to_string_lossy(), &exclusions) {
+                            total_shielded += 1;
+                            continue;
+                        }
+                        if samples.len() < 3 {
+                            samples.push(item.path.to_string_lossy().to_string());
+                        }
+                        rule_count += 1;
+                        rule_bytes += item.size_bytes;
+                        filtered_items.push(item);
+                    }
                     total_shielded += rep.skipped_locked
                         + rep.skipped_cloud
                         + rep.skipped_recent
                         + rep.skipped_whitelisted;
-                    for item in &rep.items {
-                        if samples.len() < 3 {
-                            samples.push(item.path.to_string_lossy().to_string());
-                        }
-                    }
-                    all_items.extend(rep.items);
+                    all_items.extend(filtered_items);
                 }
 
                 total_bytes += rule_bytes;
@@ -278,10 +329,20 @@ fn handle_ui_command(
 
             let reg_findings = scan_safe_registry_zones(50);
             let deep_folders = scan_hidden_appdata_and_documents(30);
-            let space_lens_files = scan_space_lens_top_files(5 * 1024 * 1024, 25);
+            let space_lens_files: Vec<SpaceLensFileEntry> =
+                scan_space_lens_top_files(5 * 1024 * 1024, 25)
+                    .into_iter()
+                    .filter(|f| !is_excluded_by_user(&f.full_path, &exclusions))
+                    .collect();
             let startup_entries = scan_startup_entries();
-            let dev_artifacts = scan_stale_dev_artifacts(25);
-            let ghost_leftovers = scan_ghost_uninstalled_leftovers(25);
+            let dev_artifacts: Vec<DevArtifactEntry> = scan_stale_dev_artifacts(25)
+                .into_iter()
+                .filter(|d| !is_excluded_by_user(&d.full_path, &exclusions))
+                .collect();
+            let ghost_leftovers: Vec<GhostLeftoverEntry> = scan_ghost_uninstalled_leftovers(25)
+                .into_iter()
+                .filter(|g| !is_excluded_by_user(&g.full_path, &exclusions))
+                .collect();
             let memory_telemetry = get_system_memory_telemetry();
 
             let dev_bytes: u64 = dev_artifacts.iter().map(|d| d.size_bytes).sum();
@@ -951,6 +1012,53 @@ fn handle_ui_command(
                 ),
             };
             if let Ok(state_json) = serde_json::to_string(&state_snapshot) {
+                let _ = proxy.send_event(UserEvent::BackendUpdated {
+                    state_json,
+                    toast: Some(toast),
+                });
+            }
+        }
+        "add_exclusion" => {
+            let Some(ref raw_pattern) = msg.target_id else {
+                return;
+            };
+            let trimmed = raw_pattern.trim().to_string();
+            if trimmed.is_empty() {
+                return;
+            }
+            let mut guard = shared.lock().unwrap();
+            if !guard.frontend_state.custom_exclusions.contains(&trimmed) {
+                guard.frontend_state.custom_exclusions.push(trimmed.clone());
+                save_custom_exclusions(&guard.vault_dir, &guard.frontend_state.custom_exclusions);
+            }
+            let toast = match locale {
+                Locale::Ru => format!("Добавлено в Белый список исключений: {trimmed}"),
+                Locale::Uk => format!("Додано до Білого списку винятків: {trimmed}"),
+                _ => format!("Added to Custom Exclusions Whitelist: {trimmed}"),
+            };
+            if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                let _ = proxy.send_event(UserEvent::BackendUpdated {
+                    state_json,
+                    toast: Some(toast),
+                });
+            }
+        }
+        "remove_exclusion" => {
+            let Some(ref raw_pattern) = msg.target_id else {
+                return;
+            };
+            let mut guard = shared.lock().unwrap();
+            guard
+                .frontend_state
+                .custom_exclusions
+                .retain(|x| x != raw_pattern);
+            save_custom_exclusions(&guard.vault_dir, &guard.frontend_state.custom_exclusions);
+            let toast = match locale {
+                Locale::Ru => format!("Удалено из Белого списка: {raw_pattern}"),
+                Locale::Uk => format!("Видалено з Білого списку: {raw_pattern}"),
+                _ => format!("Removed from Custom Exclusions: {raw_pattern}"),
+            };
+            if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
                 let _ = proxy.send_event(UserEvent::BackendUpdated {
                     state_json,
                     toast: Some(toast),

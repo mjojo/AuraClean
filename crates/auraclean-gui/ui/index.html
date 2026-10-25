@@ -825,6 +825,31 @@
       background: var(--brand-purple-deep);
       color: #FFFFFF;
     }
+
+    .search-input {
+      padding: 8px 13px;
+      border-radius: 9px;
+      border: 1px solid rgba(168, 85, 247, 0.38);
+      background: rgba(11, 11, 20, 0.85);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-family: var(--font-sans);
+      min-width: 240px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .search-input:focus {
+      border-color: var(--brand-green);
+      box-shadow: 0 0 12px rgba(74, 222, 128, 0.25);
+    }
+
+    .exclusions-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
   </style>
 </head>
 <body>
@@ -865,6 +890,7 @@
       <button class="nav-btn" onclick="switchTab('registry')" id="nav-registry">Registry Inspector</button>
       <button class="nav-btn" onclick="switchTab('startup')" id="nav-startup">Boot &amp; Startup</button>
       <button class="nav-btn" onclick="switchTab('vault')" id="nav-vault">Time-Capsule Vault</button>
+      <button class="nav-btn" onclick="switchTab('settings')" id="nav-settings">Settings &amp; Exclusions</button>
     </nav>
 
     <div class="sidebar-footer">
@@ -940,8 +966,13 @@
     <section class="panel">
       <div class="panel-header">
         <span class="panel-title" id="panel-heading">Declarative Protection &amp; Cleaning Modules</span>
+        <input type="text" class="search-input" id="search-filter" oninput="onSearchFilterChange(this.value)" placeholder="Filter by name or path..." />
       </div>
       <div id="space-lens-chart-area" style="display:none;"></div>
+      <div id="settings-exclusions-bar" class="exclusions-bar" style="display:none;">
+        <input type="text" class="search-input" id="new-exclusion-input" style="flex:1;" placeholder="Enter folder path, file mask, or domain to shield..." />
+        <button class="btn-secondary" id="btn-add-exclusion" onclick="triggerAddExclusion()">Add Exclusion</button>
+      </div>
       <div class="list-container" id="main-list"></div>
     </section>
     </div>
@@ -1021,7 +1052,13 @@
         btn_delay_60s: "Delay +60s",
         btn_scanning: "Scanning System...",
         btn_export: "Export Report (HTML/JSON)",
-        chart_title: "Space Distribution by Category (Space Lens)"
+        chart_title: "Space Distribution by Category (Space Lens)",
+        nav_settings: "Settings & Exclusions",
+        panel_settings: "Custom Exclusions Whitelist (User Protected Paths & Domains)",
+        search_placeholder: "Filter list by name or path...",
+        exclusion_placeholder: "Enter folder path, keyword, or domain (e.g. D:\\Projects\\Keep)...",
+        btn_add_exclusion: "Add to Whitelist",
+        btn_remove_exclusion: "Remove"
       },
       ru: {
         nav_dashboard: "Пульс Системы",
@@ -1071,7 +1108,13 @@
         btn_delay_60s: "Отложить +60с",
         btn_scanning: "Идет сканирование...",
         btn_export: "Экспорт отчета (HTML/JSON)",
-        chart_title: "Распределение места по категориям (Space Lens)"
+        chart_title: "Распределение места по категориям (Space Lens)",
+        nav_settings: "Настройки и Исключения",
+        panel_settings: "Пользовательский Белый Список Исключений (Защищенные папки и домены)",
+        search_placeholder: "Поиск и фильтр по имени или пути...",
+        exclusion_placeholder: "Введите путь к папке, маску или домен (например D:\\Важное)...",
+        btn_add_exclusion: "Добавить в исключения",
+        btn_remove_exclusion: "Удалить"
       },
       uk: {
         nav_dashboard: "Пульс Системи",
@@ -1121,7 +1164,13 @@
         btn_delay_60s: "Відкласти +60с",
         btn_scanning: "Триває сканування...",
         btn_export: "Експорт звіту (HTML/JSON)",
-        chart_title: "Розподіл місця за категоріями (Space Lens)"
+        chart_title: "Розподіл місця за категоріями (Space Lens)",
+        nav_settings: "Налаштування та Винятки",
+        panel_settings: "Користувацький Білий Список Винятків (Захищені папки та домени)",
+        search_placeholder: "Пошук та фільтр за назвою або шляхом...",
+        exclusion_placeholder: "Введіть шлях до папки, маску або домен...",
+        btn_add_exclusion: "Додати у винятки",
+        btn_remove_exclusion: "Видалити"
       },
       de: {
         nav_dashboard: "Systempuls",
@@ -1171,7 +1220,13 @@
         btn_delay_60s: "+60s Verzögern",
         btn_scanning: "System wird gescannt...",
         btn_export: "Bericht exportieren (HTML/JSON)",
-        chart_title: "Speicherverteilung nach Kategorien (Space Lens)"
+        chart_title: "Speicherverteilung nach Kategorien (Space Lens)",
+        nav_settings: "Einstellungen & Ausnahmen",
+        panel_settings: "Benutzerdefinierte Ausnahmen (Geschützte Pfade & Domains)",
+        search_placeholder: "Liste nach Name oder Pfad filtern...",
+        exclusion_placeholder: "Ordnerpfad oder Domain eingeben...",
+        btn_add_exclusion: "Ausnahme hinzufügen",
+        btn_remove_exclusion: "Entfernen"
       },
       es: {
         nav_dashboard: "Pulso del Sistema",
@@ -1221,7 +1276,13 @@
         btn_delay_60s: "Retrasar +60s",
         btn_scanning: "Analizando sistema...",
         btn_export: "Exportar Informe (HTML/JSON)",
-        chart_title: "Distribución de Espacio por Categoría (Space Lens)"
+        chart_title: "Distribución de Espacio por Categoría (Space Lens)",
+        nav_settings: "Ajustes y Exclusiones",
+        panel_settings: "Lista Blanca de Exclusiones del Usuario (Rutas y Dominios Protegidos)",
+        search_placeholder: "Filtrar por nombre o ruta...",
+        exclusion_placeholder: "Ingrese ruta de carpeta o dominio a proteger...",
+        btn_add_exclusion: "Añadir Exclusión",
+        btn_remove_exclusion: "Eliminar"
       },
       zh: {
         nav_dashboard: "系统脉搏",
@@ -1271,7 +1332,13 @@
         btn_delay_60s: "延迟 +60秒",
         btn_scanning: "正在扫描系统...",
         btn_export: "导出诊断报告 (HTML/JSON)",
-        chart_title: "各类别空间占用分布图 (Space Lens)"
+        chart_title: "各类别空间占用分布图 (Space Lens)",
+        nav_settings: "设置与白名单 (Exclusions)",
+        panel_settings: "用户自定义白名单排除项 (受保护路径与域名)",
+        search_placeholder: "按名称或路径筛选列表...",
+        exclusion_placeholder: "输入要保护的文件夹路径、通配符或域名...",
+        btn_add_exclusion: "添加至白名单",
+        btn_remove_exclusion: "移除"
       }
     };
 
@@ -1301,6 +1368,31 @@
     let currentLang = 'en';
     let currentTab = 'dashboard';
     let isScanning = false;
+    let searchQuery = '';
+
+    function onSearchFilterChange(val) {
+      searchQuery = (val || '').trim().toLowerCase();
+      renderUI();
+    }
+
+    function matchesSearch(textA, textB = '', textC = '') {
+      if (!searchQuery) return true;
+      const combined = `${textA} ${textB} ${textC}`.toLowerCase();
+      return combined.includes(searchQuery);
+    }
+
+    function triggerAddExclusion() {
+      const inp = document.getElementById('new-exclusion-input');
+      if (!inp) return;
+      const val = inp.value.trim();
+      if (!val) return;
+      inp.value = '';
+      sendIpc('add_exclusion', { target_id: val });
+    }
+
+    function triggerRemoveExclusion(pattern) {
+      sendIpc('remove_exclusion', { target_id: pattern });
+    }
 
     function setLanguage(lang) {
       currentLang = lang;
@@ -1322,6 +1414,7 @@
       document.getElementById('nav-registry').classList.toggle('active', tab === 'registry');
       document.getElementById('nav-startup').classList.toggle('active', tab === 'startup');
       document.getElementById('nav-vault').classList.toggle('active', tab === 'vault');
+      document.getElementById('nav-settings').classList.toggle('active', tab === 'settings');
       renderUI();
     }
 
@@ -1544,6 +1637,10 @@
       document.getElementById('nav-registry').textContent = t.nav_registry;
       document.getElementById('nav-startup').textContent = t.nav_startup;
       document.getElementById('nav-vault').textContent = t.nav_vault;
+      document.getElementById('nav-settings').textContent = t.nav_settings;
+      document.getElementById('search-filter').placeholder = t.search_placeholder;
+      document.getElementById('new-exclusion-input').placeholder = t.exclusion_placeholder;
+      document.getElementById('btn-add-exclusion').textContent = t.btn_add_exclusion;
       document.getElementById('btn-ram').textContent = t.btn_ram;
       document.getElementById('btn-export-report').textContent = t.btn_export;
       document.getElementById('ui-title').textContent = t.title;
@@ -1593,9 +1690,38 @@
         }
       }
 
+      const exclBar = document.getElementById('settings-exclusions-bar');
+      if (exclBar) {
+        exclBar.style.display = currentTab === 'settings' ? 'flex' : 'none';
+      }
+
+      if (currentTab === 'settings') {
+        document.getElementById('panel-heading').textContent = t.panel_settings;
+        const exclusions = (appState.customExclusions || []).filter(ex => matchesSearch(ex));
+        exclusions.forEach(ex => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const escapedEx = ex.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Green">PROTECTED</span>
+                <span>${ex}</span>
+              </div>
+              <div class="rule-desc">Excluded from all rule scans, Space Lens, Dev artifacts, and Ghost Hunter.</div>
+            </div>
+            <div>
+              <button class="btn-item-clean" onclick="triggerRemoveExclusion('${escapedEx}')">${t.btn_remove_exclusion}</button>
+            </div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
+
       if (currentTab === 'dev_gamer') {
         document.getElementById('panel-heading').textContent = t.panel_dev_gamer;
-        const devs = appState.devArtifacts || [];
+        const devs = (appState.devArtifacts || []).filter(da => matchesSearch(da.projectName, da.artifactKind, da.fullPath));
         devs.forEach(da => {
           const row = document.createElement('div');
           row.className = 'rule-row';
@@ -1623,7 +1749,7 @@
 
       if (currentTab === 'ghost_hunter') {
         document.getElementById('panel-heading').textContent = t.panel_ghost;
-        const ghosts = appState.ghostLeftovers || [];
+        const ghosts = (appState.ghostLeftovers || []).filter(gl => matchesSearch(gl.appName, gl.fullPath, gl.reasonEn));
         if (ghosts.length === 0) {
           listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_ghost}</span></div>`;
           return;
@@ -1660,7 +1786,7 @@
 
       if (currentTab === 'deep_folders') {
         document.getElementById('panel-heading').textContent = t.panel_deep_folders;
-        const folders = appState.deepFolders || [];
+        const folders = (appState.deepFolders || []).filter(df => matchesSearch(df.folderName, df.fullPath, df.categoryLabel));
         folders.forEach(df => {
           const row = document.createElement('div');
           row.className = 'rule-row';
@@ -1691,7 +1817,7 @@
 
       if (currentTab === 'space_lens') {
         document.getElementById('panel-heading').textContent = t.panel_space_lens;
-        const files = appState.spaceLensFiles || [];
+        const files = (appState.spaceLensFiles || []).filter(f => matchesSearch(f.fileName, f.fullPath));
         if (files.length === 0) {
           listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_space_lens}</span></div>`;
           return;
@@ -1725,7 +1851,7 @@
 
       if (currentTab === 'startup') {
         document.getElementById('panel-heading').textContent = t.panel_startup;
-        const entries = appState.startupEntries || [];
+        const entries = (appState.startupEntries || []).filter(se => matchesSearch(se.name, se.command, se.location));
         entries.forEach(se => {
           const row = document.createElement('div');
           row.className = 'rule-row';
@@ -1761,7 +1887,7 @@
 
       if (currentTab === 'registry') {
         document.getElementById('panel-heading').textContent = t.panel_registry;
-        const regs = appState.registryFindings || [];
+        const regs = (appState.registryFindings || []).filter(rf => matchesSearch(rf.titleEn, rf.titleRu, rf.subkeyPath));
         if (regs.length === 0) {
           listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_registry}</span></div>`;
           return;
@@ -1818,7 +1944,7 @@
         });
       } else {
         document.getElementById('panel-heading').textContent = t.panel_rules;
-        rules.forEach(r => {
+        rules.filter(r => matchesSearch(r.name_en, r.name_ru, r.category)).forEach(r => {
           const row = document.createElement('div');
           row.className = 'rule-row';
           const title = isSlavicLocale() ? r.name_ru : r.name_en;
