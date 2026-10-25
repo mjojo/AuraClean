@@ -49,15 +49,15 @@ pub struct RegistryFinding {
 impl RegistryFinding {
     pub fn localized_title(&self, locale: Locale) -> &str {
         match locale {
-            Locale::En => &self.title_en,
-            Locale::Ru => &self.title_ru,
+            Locale::Ru | Locale::Uk => &self.title_ru,
+            _ => &self.title_en,
         }
     }
 
     pub fn localized_reason(&self, locale: Locale) -> &str {
         match locale {
-            Locale::En => &self.reason_en,
-            Locale::Ru => &self.reason_ru,
+            Locale::Ru | Locale::Uk => &self.reason_ru,
+            _ => &self.reason_en,
         }
     }
 }

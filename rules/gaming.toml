@@ -61,7 +61,7 @@ name = "My Documents — Game Logs & Crash Dumps (SaveGames Shielded)"
 description = "Diagnostic game logs and crash dumps inside My Documents (including Cyrillic paths). SaveGames and configs are strictly excluded."
 
 [rule.i18n.ru]
-name = "Мои Документы — Логи и дампы игр (Сохранения защищены 🛡)"
+name = "Мои Документы — Логи и дампы игр (Сохранения защищены)"
 description = "Логи и дампы вылетов игр в папке «Мои документы» (с поддержкой кириллицы). Файлы сохранений (SaveGames) и настройки строго защищены."
 
 [[rule]]

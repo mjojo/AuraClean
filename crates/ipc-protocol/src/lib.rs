@@ -11,13 +11,17 @@ use uuid::Uuid;
 /// Canonical Windows Named Pipe endpoint for privilege separation.
 pub const DEFAULT_NAMED_PIPE_PATH: &str = r"\\.\pipe\AuraCleanPrivilegedService";
 
-/// Supported UI & rule localization languages.
+/// Supported UI & rule localization languages (`en`, `ru`, `uk`, `de`, `es`, `zh`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum Locale {
     #[default]
     En,
     Ru,
+    Uk,
+    De,
+    Es,
+    Zh,
 }
 
 impl Locale {
@@ -25,12 +29,20 @@ impl Locale {
         match self {
             Self::En => "en",
             Self::Ru => "ru",
+            Self::Uk => "uk",
+            Self::De => "de",
+            Self::Es => "es",
+            Self::Zh => "zh",
         }
     }
 
     pub fn from_code(code: &str) -> Self {
         match code.trim().to_ascii_lowercase().as_str() {
             "ru" | "ru-ru" | "rus" => Self::Ru,
+            "uk" | "ua" | "uk-ua" | "ukr" => Self::Uk,
+            "de" | "de-de" | "ger" => Self::De,
+            "es" | "es-es" | "spa" => Self::Es,
+            "zh" | "zh-cn" | "cn" => Self::Zh,
             _ => Self::En,
         }
     }

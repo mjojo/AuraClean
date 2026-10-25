@@ -80,21 +80,7 @@ fn main() -> Result<()> {
             let footprint = vault.current_vault_footprint_bytes()?;
 
             match locale {
-                Locale::En => {
-                    println!("  [Vault Path]          {}", vault_path.display());
-                    println!("  [Loaded Rules]        {} verified TOML rules", rules.len());
-                    println!(
-                        "  [Active Transactions] {} reversible cleanups in SQLite index",
-                        transactions.iter().filter(|t| !t.restored).count()
-                    );
-                    println!(
-                        "  [Vault Footprint]     {} bytes compressed (Max Quota: {} GiB)",
-                        footprint,
-                        vault.config().max_vault_bytes / (1024 * 1024 * 1024)
-                    );
-                    println!("\n  Loaded Declarative Rules:");
-                }
-                Locale::Ru => {
+                Locale::Ru | Locale::Uk => {
                     println!("  [Папка карантина]     {}", vault_path.display());
                     println!("  [Загружено правил]    {} проверенных TOML-правил", rules.len());
                     println!(
@@ -107,6 +93,20 @@ fn main() -> Result<()> {
                         vault.config().max_vault_bytes / (1024 * 1024 * 1024)
                     );
                     println!("\n  Загруженные правила очистки:");
+                }
+                _ => {
+                    println!("  [Vault Path]          {}", vault_path.display());
+                    println!("  [Loaded Rules]        {} verified TOML rules", rules.len());
+                    println!(
+                        "  [Active Transactions] {} reversible cleanups in SQLite index",
+                        transactions.iter().filter(|t| !t.restored).count()
+                    );
+                    println!(
+                        "  [Vault Footprint]     {} bytes compressed (Max Quota: {} GiB)",
+                        footprint,
+                        vault.config().max_vault_bytes / (1024 * 1024 * 1024)
+                    );
+                    println!("\n  Loaded Declarative Rules:");
                 }
             }
 
@@ -160,19 +160,7 @@ fn main() -> Result<()> {
 
             println!();
             match locale {
-                Locale::En => {
-                    println!(
-                        "  [Scan Summary (dry_run={})]: {} safe items found ({} KiB reclaimable)",
-                        dry_run,
-                        total_items,
-                        total_bytes / 1024
-                    );
-                    println!(
-                        "  [Safety Shields Triggered]: Locked={} | CloudPlaceholders={} | Recent(<24h)={} | Whitelisted={}",
-                        skipped_locked, skipped_cloud, skipped_recent, skipped_whitelisted
-                    );
-                }
-                Locale::Ru => {
+                Locale::Ru | Locale::Uk => {
                     println!(
                         "  [Итог сканирования (dry_run={})]: найдено {} безопасных файлов ({} КБ к очистке)",
                         dry_run,
@@ -184,6 +172,18 @@ fn main() -> Result<()> {
                         skipped_locked, skipped_cloud, skipped_recent, skipped_whitelisted
                     );
                 }
+                _ => {
+                    println!(
+                        "  [Scan Summary (dry_run={})]: {} safe items found ({} KiB reclaimable)",
+                        dry_run,
+                        total_items,
+                        total_bytes / 1024
+                    );
+                    println!(
+                        "  [Safety Shields Triggered]: Locked={} | CloudPlaceholders={} | Recent(<24h)={} | Whitelisted={}",
+                        skipped_locked, skipped_cloud, skipped_recent, skipped_whitelisted
+                    );
+                }
             }
         }
         Commands::Restore { tx_id } => {
@@ -191,14 +191,14 @@ fn main() -> Result<()> {
                 .context("Failed to open Time-Capsule Vault")?;
             let (restored_files, restored_reg) = vault.restore_transaction(tx_id)?;
             match locale {
-                Locale::En => println!(
-                    "  [Time-Capsule Rollback] Restored {} files and {} registry entries from transaction {}",
+                Locale::Ru | Locale::Uk => println!(
+                    "  [Откат Time-Capsule] Восстановлено {} файлов и {} записей реестра из транзакции {}",
                     restored_files,
                     restored_reg.len(),
                     tx_id
                 ),
-                Locale::Ru => println!(
-                    "  [Откат Time-Capsule] Восстановлено {} файлов и {} записей реестра из транзакции {}",
+                _ => println!(
+                    "  [Time-Capsule Rollback] Restored {} files and {} registry entries from transaction {}",
                     restored_files,
                     restored_reg.len(),
                     tx_id
@@ -213,19 +213,19 @@ fn main() -> Result<()> {
 fn print_banner(locale: Locale) {
     println!("========================================================================");
     match locale {
-        Locale::En => {
+        Locale::Ru | Locale::Uk => {
             println!(
-                "  ⚡ AuraClean v{} by mjojo — Hyper-Safe Windows Maintenance Suite",
+                "  AuraClean v{} от mjojo — Сверхбезопасный комплекс очистки Windows",
                 env!("CARGO_PKG_VERSION")
             );
-            println!("  🛡  Zero-Breakage Safety Engine | Time-Capsule Zstd Vault");
+            println!("  Ядро защиты Zero-Breakage | Карантин Time-Capsule (zstd)");
         }
-        Locale::Ru => {
+        _ => {
             println!(
-                "  ⚡ AuraClean v{} от mjojo — Сверхбезопасный комплекс очистки Windows",
+                "  AuraClean v{} by mjojo — Hyper-Safe Windows Maintenance Suite",
                 env!("CARGO_PKG_VERSION")
             );
-            println!("  🛡  Ядро защиты Zero-Breakage | Карантин Time-Capsule (zstd)");
+            println!("  Zero-Breakage Safety Engine | Time-Capsule Zstd Vault");
         }
     }
     println!("========================================================================\n");

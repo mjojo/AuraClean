@@ -321,8 +321,8 @@ fn handle_ui_command(
             guard.last_registry_findings = reg_findings;
 
             let toast = match locale {
-                Locale::En => format!(
-                    "Smart Scan finished: {} safe files & {} registry orphans found ({} shielded)",
+                Locale::Ru => format!(
+                    "Анализ завершен: {} файлов и {} сирот реестра (защищено щитами: {})",
                     guard
                         .frontend_state
                         .scan_results
@@ -332,8 +332,19 @@ fn handle_ui_command(
                     guard.last_registry_findings.len(),
                     total_shielded
                 ),
-                Locale::Ru => format!(
-                    "Анализ завершен: {} файлов и {} сирот реестра (защищено щитами: {})",
+                Locale::Uk => format!(
+                    "Аналіз завершено: {} файлів та {} сиріт реєстру (захищено щитами: {})",
+                    guard
+                        .frontend_state
+                        .scan_results
+                        .as_ref()
+                        .map(|s| s.total_items)
+                        .unwrap_or(0),
+                    guard.last_registry_findings.len(),
+                    total_shielded
+                ),
+                _ => format!(
+                    "Smart Scan finished: {} safe files & {} registry orphans found ({} shielded)",
                     guard
                         .frontend_state
                         .scan_results
@@ -454,12 +465,16 @@ fn handle_ui_command(
                     vault.current_vault_footprint_bytes().unwrap_or(0);
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Permission verified: Transaction {} saved to Time-Capsule Vault",
+                    Locale::Ru => format!(
+                        "Разрешение подтверждено: транзакция {} выполнена",
                         &tx_summary.transaction_id.to_string()[..8]
                     ),
-                    Locale::Ru => format!(
-                        "Разрешение подтверждено: транзакция {} сохранена в Капсулу Времени",
+                    Locale::Uk => format!(
+                        "Дозвіл підтверджено: транзакцію {} виконано",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    _ => format!(
+                        "Permission verified: Transaction {} completed",
                         &tx_summary.transaction_id.to_string()[..8]
                     ),
                 };
@@ -490,12 +505,16 @@ fn handle_ui_command(
                     vault.current_vault_footprint_bytes().unwrap_or(0);
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Restored {restored_count} files from transaction {}",
-                        &tx_id_str[..8]
-                    ),
                     Locale::Ru => format!(
                         "Восстановлено {restored_count} файлов из транзакции {}",
+                        &tx_id_str[..8]
+                    ),
+                    Locale::Uk => format!(
+                        "Відновлено {restored_count} файлів із транзакції {}",
+                        &tx_id_str[..8]
+                    ),
+                    _ => format!(
+                        "Restored {restored_count} files from transaction {}",
                         &tx_id_str[..8]
                     ),
                 };
@@ -514,12 +533,16 @@ fn handle_ui_command(
             guard.frontend_state.memory_telemetry = telemetry;
             let freed_mb = freed_bytes / (1024 * 1024);
             let toast = match locale {
-                Locale::En => format!(
-                    "RAM Standby & Working Set optimized (Load: {}%, Freed: ~{} MB)",
-                    guard.frontend_state.memory_telemetry.memory_load_percent, freed_mb
-                ),
                 Locale::Ru => format!(
                     "ОЗУ оптимизирована перед запуском игры (Загрузка: {}%, Освобождено: ~{} МБ)",
+                    guard.frontend_state.memory_telemetry.memory_load_percent, freed_mb
+                ),
+                Locale::Uk => format!(
+                    "ОЗП оптимізовано (Завантаження: {}%, Звільнено: ~{} МБ)",
+                    guard.frontend_state.memory_telemetry.memory_load_percent, freed_mb
+                ),
+                _ => format!(
+                    "RAM Standby & Working Set optimized (Load: {}%, Freed: ~{} MB)",
                     guard.frontend_state.memory_telemetry.memory_load_percent, freed_mb
                 ),
             };
@@ -595,13 +618,18 @@ fn handle_ui_command(
                 recompute_scan_summary(&mut guard);
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Ghost folder '{}' moved to Time-Capsule (tx {})",
+                    Locale::Ru => format!(
+                        "Остатки «{}» перенесены в Капсулу Времени (транзакция {})",
                         ghost.app_name,
                         &tx_summary.transaction_id.to_string()[..8]
                     ),
-                    Locale::Ru => format!(
-                        "Остатки «{}» перенесены в Капсулу Времени (транзакция {})",
+                    Locale::Uk => format!(
+                        "Залишки «{}» перенесено до Капсули Часу (транзакція {})",
+                        ghost.app_name,
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    _ => format!(
+                        "Ghost folder '{}' moved to Time-Capsule (tx {})",
                         ghost.app_name,
                         &tx_summary.transaction_id.to_string()[..8]
                     ),
@@ -652,12 +680,16 @@ fn handle_ui_command(
                 recompute_scan_summary(&mut guard);
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Directly deleted '{}' ({}) — rebuild anytime via `{}`",
-                        dev.project_name, dev.artifact_kind, dev.rebuild_hint
-                    ),
                     Locale::Ru => format!(
                         "Напрямую удалена сборка «{}» ({}) — пересобирается через `{}`",
+                        dev.project_name, dev.artifact_kind, dev.rebuild_hint
+                    ),
+                    Locale::Uk => format!(
+                        "Напряму видалено збірку «{}» ({}) — перезбирається через `{}`",
+                        dev.project_name, dev.artifact_kind, dev.rebuild_hint
+                    ),
+                    _ => format!(
+                        "Directly deleted '{}' ({}) — rebuild anytime via `{}`",
                         dev.project_name, dev.artifact_kind, dev.rebuild_hint
                     ),
                 };
@@ -712,12 +744,16 @@ fn handle_ui_command(
                 recompute_scan_summary(&mut guard);
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Registry key backed up to Time-Capsule (.reg snapshot {})",
-                        &tx_summary.transaction_id.to_string()[..8]
-                    ),
                     Locale::Ru => format!(
                         "Ключ реестра сохранен в снимок .reg Time-Capsule ({})",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    Locale::Uk => format!(
+                        "Ключ реєстру збережено у знімок .reg Time-Capsule ({})",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    _ => format!(
+                        "Registry key backed up to Time-Capsule (.reg snapshot {})",
                         &tx_summary.transaction_id.to_string()[..8]
                     ),
                 };
@@ -764,8 +800,9 @@ fn handle_ui_command(
                     .retain(|f| &f.full_path != target_path);
 
                 let toast = match locale {
-                    Locale::En => format!("Deleted large file: {}", p.display()),
                     Locale::Ru => format!("Удален крупный файл: {}", p.display()),
+                    Locale::Uk => format!("Видалено великий файл: {}", p.display()),
+                    _ => format!("Deleted large file: {}", p.display()),
                 };
                 if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
                     let _ = proxy.send_event(UserEvent::BackendUpdated {
@@ -804,12 +841,16 @@ fn handle_ui_command(
                 }
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Startup '{}' is now {} (backed up in Time-Capsule)",
-                        name, new_status
-                    ),
                     Locale::Ru => format!(
                         "Автозапуск «{}» переведен в режим {} (снимок в Time-Capsule)",
+                        name, new_status
+                    ),
+                    Locale::Uk => format!(
+                        "Автозапуск «{}» переведено у режим {} (знімок у Time-Capsule)",
+                        name, new_status
+                    ),
+                    _ => format!(
+                        "Startup '{}' is now {} (backed up in Time-Capsule)",
                         name, new_status
                     ),
                 };
@@ -850,12 +891,16 @@ fn handle_ui_command(
                 }
 
                 let toast = match locale {
-                    Locale::En => format!(
-                        "Startup '{}' set to {} (backed up in Time-Capsule)",
-                        name, new_status
-                    ),
                     Locale::Ru => format!(
                         "Автозапуск «{}» переведен в режим {} (снимок в Time-Capsule)",
+                        name, new_status
+                    ),
+                    Locale::Uk => format!(
+                        "Автозапуск «{}» переведено у режим {} (знімок у Time-Capsule)",
+                        name, new_status
+                    ),
+                    _ => format!(
+                        "Startup '{}' set to {} (backed up in Time-Capsule)",
                         name, new_status
                     ),
                 };
@@ -865,6 +910,51 @@ fn handle_ui_command(
                         toast: Some(toast),
                     });
                 }
+            }
+        }
+        "export_report" => {
+            let (state_snapshot, vault_dir) = {
+                let guard = shared.lock().unwrap();
+                (guard.frontend_state.clone(), guard.vault_dir.clone())
+            };
+            let reports_dir = vault_dir
+                .parent()
+                .unwrap_or(&vault_dir)
+                .join("Reports");
+            let _ = std::fs::create_dir_all(&reports_dir);
+            let ts = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+            let json_path = reports_dir.join(format!("AuraClean_Report_{ts}.json"));
+            let html_path = reports_dir.join(format!("AuraClean_Report_{ts}.html"));
+
+            if let Ok(json_text) = serde_json::to_string_pretty(&state_snapshot) {
+                let _ = std::fs::write(&json_path, json_text);
+            }
+            let html_doc = generate_html_diagnostic_report(&state_snapshot);
+            if std::fs::write(&html_path, html_doc).is_ok() {
+                let _ = std::process::Command::new("explorer.exe")
+                    .arg(format!("/select,{}", html_path.display()))
+                    .spawn();
+            }
+
+            let toast = match locale {
+                Locale::Ru => format!(
+                    "Отчет сохранен в HTML и JSON: {}",
+                    html_path.display()
+                ),
+                Locale::Uk => format!(
+                    "Звіт збережено у HTML та JSON: {}",
+                    html_path.display()
+                ),
+                _ => format!(
+                    "Diagnostic report exported (HTML & JSON): {}",
+                    html_path.display()
+                ),
+            };
+            if let Ok(state_json) = serde_json::to_string(&state_snapshot) {
+                let _ = proxy.send_event(UserEvent::BackendUpdated {
+                    state_json,
+                    toast: Some(toast),
+                });
             }
         }
         _ => {}
@@ -904,4 +994,61 @@ fn recompute_scan_summary(guard: &mut SharedAppState) {
         total_shielded: prev_shielded,
         registry_count: guard.last_registry_findings.len(),
     });
+}
+
+fn generate_html_diagnostic_report(state: &FrontendState) -> String {
+    let ts = chrono::Utc::now().to_rfc3339();
+    let total_reclaim_mb = state
+        .scan_results
+        .as_ref()
+        .map(|s| s.total_bytes / (1024 * 1024))
+        .unwrap_or(0);
+    let ram_pct = state.memory_telemetry.memory_load_percent;
+
+    let mut rows = String::new();
+    for r in &state.rules {
+        rows.push_str(&format!(
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{} KB</td></tr>",
+            r.name_en,
+            r.safety_level,
+            r.quarantine_tier,
+            r.scanned_bytes.unwrap_or(0) / 1024
+        ));
+    }
+
+    format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AuraClean v0.1.1 System Diagnostic Report — by mjojo</title>
+<style>
+  body {{ background:#0B0B14; color:#F8FAFC; font-family:'Segoe UI',sans-serif; padding:32px; }}
+  h1 {{ color:#A855F7; margin-bottom:4px; }}
+  .sub {{ color:#4ADE80; font-family:monospace; margin-bottom:24px; }}
+  .cards {{ display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap; }}
+  .card {{ background:#131422; border:1px solid rgba(168,85,247,0.35); border-radius:12px; padding:16px 22px; }}
+  table {{ width:100%; border-collapse:collapse; background:#131422; border-radius:12px; overflow:hidden; }}
+  th, td {{ padding:10px 14px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left; font-size:13px; }}
+  th {{ background:rgba(168,85,247,0.2); color:#D8B4FE; }}
+</style>
+</head>
+<body>
+  <h1>AuraClean v0.1.1 — System Diagnostic Report</h1>
+  <div class="sub">Generated by mjojo Zero-Breakage Engine at {ts}</div>
+  <div class="cards">
+    <div class="card"><strong>Reclaimable Space:</strong> {total_reclaim_mb} MB</div>
+    <div class="card"><strong>RAM Load:</strong> {ram_pct}%</div>
+    <div class="card"><strong>Dev Build Artifacts:</strong> {}</div>
+    <div class="card"><strong>Startup Entries:</strong> {}</div>
+  </div>
+  <table>
+    <thead><tr><th>Module</th><th>Safety</th><th>Policy</th><th>Detected Size</th></tr></thead>
+    <tbody>{rows}</tbody>
+  </table>
+</body>
+</html>"#,
+        state.dev_artifacts.len(),
+        state.startup_entries.len()
+    )
 }

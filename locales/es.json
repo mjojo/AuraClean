@@ -1,0 +1,19 @@
+{
+  "app": {
+    "name": "AuraClean",
+    "vendor": "mjojo",
+    "tagline": "Suite de mantenimiento de Windows ultra segura de próxima generación impulsada por Rust"
+  },
+  "nav": {
+    "dashboard": "Pulso del Sistema",
+    "space_lens": "Radiografía de Disco",
+    "profiles": "Perfiles Inteligentes",
+    "startup": "Inicio y Arranque",
+    "time_capsule": "Cápsula del Tiempo"
+  },
+  "safety": {
+    "green": "100% Seguro (Verde)",
+    "yellow": "Situacional (Amarillo)",
+    "red": "Protegido / Bloqueado (Rojo)"
+  }
+}

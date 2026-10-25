@@ -1,0 +1,19 @@
+{
+  "app": {
+    "name": "AuraClean",
+    "vendor": "mjojo",
+    "tagline": "Ultrasichere Windows-Systempflege der nächsten Generation auf Rust-Basis"
+  },
+  "nav": {
+    "dashboard": "Systempuls",
+    "space_lens": "Speicher-Röntgen (Space Lens)",
+    "profiles": "Smart-Profile",
+    "startup": "Autostart & Bootzeit",
+    "time_capsule": "Zeitkapsel (Quarantäne)"
+  },
+  "safety": {
+    "green": "100% Sicher (Grün)",
+    "yellow": "Situationsabhängig (Gelb)",
+    "red": "Geschützt / Blockiert (Rot)"
+  }
+}

@@ -42,13 +42,17 @@
 
     /* Sidebar */
     .sidebar {
-      width: 260px;
-      background: rgba(11, 11, 20, 0.92);
+      width: 256px;
+      min-width: 256px;
+      flex-shrink: 0;
+      background: rgba(11, 11, 20, 0.94);
       border-right: 1px solid var(--border-glass);
       display: flex;
       flex-direction: column;
-      padding: 20px 16px;
-      gap: 20px;
+      padding: 18px 14px;
+      gap: 16px;
+      height: 100vh;
+      overflow-y: auto;
     }
 
     .brand-box {
@@ -127,23 +131,30 @@
     }
 
     .lang-switch {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
       background: rgba(19, 20, 34, 0.9);
       border: 1px solid var(--border-glass);
-      border-radius: 8px;
-      overflow: hidden;
+      border-radius: 10px;
+      padding: 4px;
     }
 
     .lang-btn {
-      flex: 1;
-      padding: 7px 0;
+      padding: 6px 0;
       border: none;
+      border-radius: 6px;
       background: transparent;
       color: var(--text-secondary);
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
       transition: all 0.15s;
+    }
+
+    .lang-btn:hover {
+      color: #FFFFFF;
+      background: rgba(168, 85, 247, 0.15);
     }
 
     .lang-btn.active {
@@ -154,17 +165,32 @@
     /* Main Content */
     .main {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      padding: 24px 28px;
+      padding: 22px 26px;
       overflow-y: auto;
-      gap: 20px;
+      overflow-x: hidden;
+      gap: 18px;
+    }
+
+    .main-inner {
+      width: 100%;
+      max-width: 1480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+      min-height: 0;
     }
 
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
     }
 
     .page-title {
@@ -196,18 +222,21 @@
       background: var(--bg-surface);
       border: 1px solid var(--border-glass);
       border-radius: 18px;
-      padding: 24px 28px;
+      padding: 20px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 24px;
+      flex-wrap: wrap;
+      gap: 18px;
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
     }
 
     .pulse-left {
       display: flex;
       align-items: center;
-      gap: 22px;
+      gap: 18px;
+      flex: 1;
+      min-width: 280px;
     }
 
     /* Animated Cyber-Pulse Reactor Core (Zero Raster Images) */
@@ -297,12 +326,19 @@
 
     .hero-actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
+      flex-wrap: wrap;
+    }
+
+    @keyframes scanBtnShimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     .btn-primary {
-      padding: 13px 24px;
+      padding: 12px 22px;
       border-radius: 12px;
       border: 1px solid rgba(74, 222, 128, 0.5);
       background: linear-gradient(135deg, var(--brand-purple-deep), #6D28D9);
@@ -312,33 +348,60 @@
       cursor: pointer;
       box-shadow: 0 6px 20px rgba(147, 51, 234, 0.4);
       transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       transform: translateY(-1px);
       box-shadow: 0 8px 26px rgba(168, 85, 247, 0.6);
     }
 
+    .btn-primary:disabled,
+    .btn-primary.scanning-locked {
+      cursor: not-allowed;
+      pointer-events: none;
+      opacity: 0.92;
+      background: linear-gradient(270deg, #6D28D9, #059669, #9333EA);
+      background-size: 240% 240%;
+      animation: scanBtnShimmer 1.6s ease infinite;
+      border-color: var(--brand-green);
+      box-shadow: 0 0 22px rgba(74, 222, 128, 0.45);
+    }
+
+    .btn-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #4ADE80;
+      border-radius: 50%;
+      animation: spinCW 0.7s linear infinite;
+      display: inline-block;
+    }
+
     .btn-secondary {
-      padding: 13px 20px;
+      padding: 12px 18px;
       border-radius: 12px;
       border: 1px solid rgba(74, 222, 128, 0.45);
       background: rgba(34, 197, 94, 0.16);
       color: var(--brand-green);
       font-weight: 700;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       transition: all 0.18s ease;
+      white-space: nowrap;
     }
 
     .btn-secondary:hover {
       background: rgba(34, 197, 94, 0.28);
     }
 
-    /* Bento Grid */
+    /* Bento Grid (Responsive on resize) */
     .bento-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 14px;
     }
 
@@ -350,11 +413,15 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
+      min-width: 0;
     }
 
     .bento-label {
       font-size: 12px;
       color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .bento-val {
@@ -362,11 +429,17 @@
       font-weight: 800;
       font-family: var(--font-mono);
       color: #FFFFFF;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .bento-sub {
       font-size: 11px;
       color: var(--brand-green);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Rules & Findings Table */
@@ -380,12 +453,15 @@
       flex-direction: column;
       gap: 12px;
       min-height: 240px;
+      min-width: 0;
     }
 
     .panel-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
     .panel-title {
@@ -395,10 +471,12 @@
 
     .list-container {
       overflow-y: auto;
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       gap: 8px;
       padding-right: 4px;
+      flex: 1;
     }
 
     .rule-row {
@@ -410,12 +488,15 @@
       background: rgba(11, 11, 20, 0.65);
       border: 1px solid rgba(255, 255, 255, 0.06);
       gap: 14px;
+      min-width: 0;
     }
 
     .rule-info {
       display: flex;
       flex-direction: column;
       gap: 3px;
+      min-width: 0;
+      flex: 1;
     }
 
     .rule-name {
@@ -423,12 +504,62 @@
       font-weight: 700;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
     .rule-desc {
       font-size: 12px;
       color: var(--text-secondary);
+      overflow-wrap: anywhere;
+    }
+
+    /* Space Lens Visual Distribution Chart */
+    .space-lens-chart-card {
+      background: rgba(11, 11, 20, 0.78);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .space-bar-track {
+      width: 100%;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
+      overflow: hidden;
+      display: flex;
+      gap: 2px;
+    }
+
+    .space-bar-seg {
+      height: 100%;
+      transition: width 0.4s ease;
+    }
+
+    .space-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 12px;
+    }
+
+    .space-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-mono);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
     }
 
     .badge {
@@ -721,36 +852,44 @@
       </div>
       <div>
         <div class="brand-title">AuraClean</div>
-        <div class="brand-sub">by mjojo • v0.1.0</div>
+        <div class="brand-sub">by mjojo • v0.1.1</div>
       </div>
     </div>
 
     <nav class="nav-list">
-      <button class="nav-btn active" onclick="switchTab('dashboard')" id="nav-dashboard">⚡ System Pulse</button>
-      <button class="nav-btn" onclick="switchTab('deep_folders')" id="nav-deep-folders">🕵️ Hidden AppData &amp; Docs</button>
-      <button class="nav-btn" onclick="switchTab('dev_gamer')" id="nav-dev-gamer">🛠 Dev &amp; Gamer</button>
-      <button class="nav-btn" onclick="switchTab('ghost_hunter')" id="nav-ghost">👻 Ghost Hunter</button>
-      <button class="nav-btn" onclick="switchTab('space_lens')" id="nav-space-lens">🪐 Space Lens</button>
-      <button class="nav-btn" onclick="switchTab('registry')" id="nav-registry">🧠 Registry Inspector</button>
-      <button class="nav-btn" onclick="switchTab('startup')" id="nav-startup">⏱ Boot &amp; Startup</button>
-      <button class="nav-btn" onclick="switchTab('vault')" id="nav-vault">⏳ Time-Capsule Vault</button>
+      <button class="nav-btn active" onclick="switchTab('dashboard')" id="nav-dashboard">System Pulse</button>
+      <button class="nav-btn" onclick="switchTab('deep_folders')" id="nav-deep-folders">Hidden AppData &amp; Docs</button>
+      <button class="nav-btn" onclick="switchTab('dev_gamer')" id="nav-dev-gamer">Dev &amp; Gamer</button>
+      <button class="nav-btn" onclick="switchTab('ghost_hunter')" id="nav-ghost">Ghost Hunter</button>
+      <button class="nav-btn" onclick="switchTab('space_lens')" id="nav-space-lens">Space Lens</button>
+      <button class="nav-btn" onclick="switchTab('registry')" id="nav-registry">Registry Inspector</button>
+      <button class="nav-btn" onclick="switchTab('startup')" id="nav-startup">Boot &amp; Startup</button>
+      <button class="nav-btn" onclick="switchTab('vault')" id="nav-vault">Time-Capsule Vault</button>
     </nav>
 
     <div class="sidebar-footer">
       <div class="lang-switch">
         <button class="lang-btn active" id="lang-en" onclick="setLanguage('en')">EN</button>
         <button class="lang-btn" id="lang-ru" onclick="setLanguage('ru')">RU</button>
+        <button class="lang-btn" id="lang-uk" onclick="setLanguage('uk')">UA</button>
+        <button class="lang-btn" id="lang-de" onclick="setLanguage('de')">DE</button>
+        <button class="lang-btn" id="lang-es" onclick="setLanguage('es')">ES</button>
+        <button class="lang-btn" id="lang-zh" onclick="setLanguage('zh')">中文</button>
       </div>
     </div>
   </aside>
 
   <main class="main">
+    <div class="main-inner">
     <header class="top-bar">
       <div>
         <h1 class="page-title" id="ui-title">System Pulse & Smart Care</h1>
         <p class="page-subtitle" id="ui-subtitle">Zero-Breakage Transactional Engine • Compile-Time Immutable Whitelist Active</p>
       </div>
-      <div class="safety-pill" id="ui-shield-pill">🛡 Zero-Breakage Shield: READY</div>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="btn-item-clean" id="btn-export-report" onclick="triggerExportReport()">Export Report (HTML/JSON)</button>
+        <div class="safety-pill" id="ui-shield-pill">Zero-Breakage Shield: READY</div>
+      </div>
     </header>
 
     <section class="hero-card">
@@ -769,9 +908,9 @@
         </div>
       </div>
       <div class="hero-actions">
-        <button class="btn-secondary" id="btn-ram" onclick="triggerRamBoost()">🚀 RAM Boost</button>
-        <button class="btn-primary" id="btn-scan" onclick="triggerScan()">🔍 Smart Scan</button>
-        <button class="btn-secondary" id="btn-clean" onclick="openPermissionModal()" style="display:none;">🛡 Review &amp; Approve Cleanup</button>
+        <button class="btn-secondary" id="btn-ram" onclick="triggerRamBoost()">RAM Boost</button>
+        <button class="btn-primary" id="btn-scan" onclick="triggerScan()">Smart Scan</button>
+        <button class="btn-secondary" id="btn-clean" onclick="openPermissionModal()" style="display:none;">Review &amp; Approve Cleanup</button>
       </div>
     </section>
 
@@ -802,8 +941,10 @@
       <div class="panel-header">
         <span class="panel-title" id="panel-heading">Declarative Protection &amp; Cleaning Modules</span>
       </div>
+      <div id="space-lens-chart-area" style="display:none;"></div>
       <div class="list-container" id="main-list"></div>
     </section>
+    </div>
   </main>
 
   <!-- Explicit User Permission Modal before any Cleanup executes -->
@@ -811,7 +952,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <div>
-          <div class="modal-title" id="modal-title">🛡 Cleanup Permission &amp; Safety Review</div>
+          <div class="modal-title" id="modal-title">Cleanup Permission &amp; Safety Review</div>
           <div class="modal-subtitle" id="modal-subtitle">
             AuraClean never deletes files without your explicit permission. Select the categories to move into the reversible Time-Capsule Vault:
           </div>
@@ -822,7 +963,7 @@
         <span class="rule-desc" id="modal-summary-note">All approved items are backed up to Time-Capsule (Zstd + SQLite).</span>
         <div style="display:flex; gap:10px;">
           <button class="btn-cancel" id="btn-modal-cancel" onclick="closePermissionModal()">Cancel</button>
-          <button class="btn-primary" id="btn-modal-confirm" onclick="confirmApprovedQuarantine()">✅ Approve &amp; Move to Time-Capsule</button>
+          <button class="btn-primary" id="btn-modal-confirm" onclick="confirmApprovedQuarantine()">Approve &amp; Move to Time-Capsule</button>
         </div>
       </div>
     </div>
@@ -833,22 +974,22 @@
   <script>
     const I18N = {
       en: {
-        nav_dashboard: "⚡ System Pulse",
-        nav_deep_folders: "🕵️ Hidden AppData & Docs",
-        nav_dev_gamer: "🛠 Dev & Gamer",
-        nav_ghost: "👻 Ghost Hunter",
-        nav_space_lens: "🪐 Space Lens",
-        nav_registry: "🧠 Registry Inspector",
-        nav_startup: "⏱ Boot & Startup",
-        nav_vault: "⏳ Time-Capsule Vault",
+        nav_dashboard: "System Pulse",
+        nav_deep_folders: "Hidden AppData & Docs",
+        nav_dev_gamer: "Dev & Gamer",
+        nav_ghost: "Ghost Hunter",
+        nav_space_lens: "Space Lens",
+        nav_registry: "Registry Inspector",
+        nav_startup: "Boot & Startup",
+        nav_vault: "Time-Capsule Vault",
         title: "System Pulse & Smart Care",
         subtitle: "Zero-Breakage Transactional Engine • Full Hidden AppData & Cyrillic Path Support",
-        shield_pill: "🛡 Zero-Breakage Shield: READY",
+        shield_pill: "Zero-Breakage Shield: READY",
         hero_ready_title: "Neural Safety Core Ready",
         hero_ready_desc: "Scans hidden AppData (Local/LocalLow/Roaming) & My Documents (Cyrillic UTF-16 aware), shielding locked files & SaveGames.",
-        btn_ram: "🚀 RAM Boost",
-        btn_scan: "🔍 Smart Scan",
-        btn_clean: "🛡 Review & Approve Cleanup",
+        btn_ram: "RAM Boost",
+        btn_scan: "Smart Scan",
+        btn_clean: "Review & Approve Cleanup",
         lbl_reclaimable: "Safe to Reclaim",
         lbl_shields: "Shielded Files",
         lbl_vault: "Time-Capsule Vault",
@@ -861,41 +1002,44 @@
         panel_registry: "Human-Readable Registry Inspector (Removable-Drive Aware)",
         panel_startup: "Boot & Startup Impact Profiler (HKCU / HKLM Run)",
         panel_vault: "Time-Capsule Reversible Transactions (Zstandard + SQLite)",
-        restore_btn: "↩ Rollback 1-Click",
+        restore_btn: "Rollback 1-Click",
         restored_badge: "Restored",
         empty_vault: "No quarantine snapshots yet. Run a Smart Scan to inspect your system.",
         empty_registry: "No orphaned registry references detected (or run Smart Scan first).",
         empty_space_lens: "Run Smart Scan to index top heavy files across your profile.",
         empty_ghost: "Run Smart Scan to cross-reference hidden AppData against installed software.",
-        modal_title: "🛡 Cleanup Permission & Safety Authorization",
+        modal_title: "Cleanup Permission & Safety Authorization",
         modal_subtitle: "AuraClean never cleans without your explicit permission. Uncheck any category you wish to keep:",
-        modal_note: "🟢 Green items are checked by default. 🟡 Yellow (shader/dev caches) are unchecked by default.",
+        modal_note: "Green items are checked by default. Yellow (shader/dev caches) are unchecked by default.",
         modal_cancel: "Cancel",
-        modal_confirm: "✅ Authorize & Execute",
+        modal_confirm: "Authorize & Execute",
         reg_checkbox_title: "Orphaned Registry Keys (.reg + JSON Snapshot)",
-        btn_clean_single: "🧹 Clean Item",
-        btn_open_explorer: "📂 Open Folder",
-        btn_disable_startup: "⏸ Disable",
-        btn_enable_startup: "▶ Enable",
-        btn_delay_60s: "⏱ Delay +60s"
+        btn_clean_single: "Clean Item",
+        btn_open_explorer: "Open Folder",
+        btn_disable_startup: "Disable",
+        btn_enable_startup: "Enable",
+        btn_delay_60s: "Delay +60s",
+        btn_scanning: "Scanning System...",
+        btn_export: "Export Report (HTML/JSON)",
+        chart_title: "Space Distribution by Category (Space Lens)"
       },
       ru: {
-        nav_dashboard: "⚡ Пульс Системы",
-        nav_deep_folders: "🕵️ Скрытые AppData и Документы",
-        nav_dev_gamer: "🛠 Профи (Dev & Gamer)",
-        nav_ghost: "👻 Охотник за Призраками",
-        nav_space_lens: "🪐 Рентген Диска",
-        nav_registry: "🧠 Инспектор Реестра",
-        nav_startup: "⏱ Автозагрузка и Старт",
-        nav_vault: "⏳ Капсула Времени",
+        nav_dashboard: "Пульс Системы",
+        nav_deep_folders: "Скрытые AppData и Документы",
+        nav_dev_gamer: "Профи (Dev & Gamer)",
+        nav_ghost: "Охотник за Призраками",
+        nav_space_lens: "Рентген Диска",
+        nav_registry: "Инспектор Реестра",
+        nav_startup: "Автозагрузка и Старт",
+        nav_vault: "Капсула Времени",
         title: "Пульс Системы и Деликатная Очистка",
         subtitle: "Транзакционное ядро Zero-Breakage • Поддержка скрытых папок AppData и путей с кириллицей",
-        shield_pill: "🛡 Щит Безопасности: АКТИВЕН",
+        shield_pill: "Щит Безопасности: АКТИВЕН",
         hero_ready_title: "Нейро-Ядро Безопасности mjojo Готово",
         hero_ready_desc: "Сканирует скрытые папки AppData (Local/LocalLow/Roaming) и «Мои документы» (с пониманием кириллицы), защищая сохранения игр.",
-        btn_ram: "🚀 Разгон ОЗУ",
-        btn_scan: "🔍 Умный Анализ",
-        btn_clean: "🛡 Проверить и Разрешить Очистку",
+        btn_ram: "Разгон ОЗУ",
+        btn_scan: "Умный Анализ",
+        btn_clean: "Проверить и Разрешить Очистку",
         lbl_reclaimable: "Доступно к очистке",
         lbl_shields: "Защищено щитами",
         lbl_vault: "Архив Time-Capsule",
@@ -908,28 +1052,229 @@
         panel_registry: "Человекочитаемый Инспектор Реестра (С защитой съемных дисков)",
         panel_startup: "Анализатор Автозагрузки и Времени Старта (HKCU / HKLM Run)",
         panel_vault: "Обратимые транзакции Time-Capsule (Zstandard + SQLite)",
-        restore_btn: "↩ Откатить в 1 клик",
+        restore_btn: "Откатить в 1 клик",
         restored_badge: "Восстановлено",
         empty_vault: "В карантине пока нет транзакций. Запустите Умный Анализ для проверки ПК.",
         empty_registry: "Битых ссылок реестра не обнаружено (или сначала запустите Умный Анализ).",
         empty_space_lens: "Запустите Умный Анализ для построения карты самых крупных файлов.",
         empty_ghost: "Запустите Умный Анализ для сверки скрытых папок AppData со списком установленных программ.",
-        modal_title: "🛡 Запрос Разрешения на Деликатную Очистку",
-        modal_subtitle: "AuraClean ничего не трогает без вашего явного согласия. Отметьте категории для переноса в Капсулу Времени:",
-        modal_note: "🟢 Безопасные категории отмечены по умолчанию. 🟡 Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
+        modal_title: "Запрос Разрешения на Деликатную Очистку",
+        modal_subtitle: "AuraClean ничего не трогает без вашего явного согласия. Отметьте категории для выполнения:",
+        modal_note: "Безопасные категории отмечены по умолчанию. Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
         modal_cancel: "Отмена",
-        modal_confirm: "✅ Разрешить и Выполнить",
+        modal_confirm: "Разрешить и Выполнить",
         reg_checkbox_title: "Осиротевшие ключи реестра (Снимок .reg + JSON)",
-        btn_clean_single: "🧹 Очистить отдельно",
-        btn_open_explorer: "📂 Папка",
-        btn_disable_startup: "⏸ Выключить",
-        btn_enable_startup: "▶ Включить",
-        btn_delay_60s: "⏱ Отложить +60с"
+        btn_clean_single: "Очистить отдельно",
+        btn_open_explorer: "Папка",
+        btn_disable_startup: "Выключить",
+        btn_enable_startup: "Включить",
+        btn_delay_60s: "Отложить +60с",
+        btn_scanning: "Идет сканирование...",
+        btn_export: "Экспорт отчета (HTML/JSON)",
+        chart_title: "Распределение места по категориям (Space Lens)"
+      },
+      uk: {
+        nav_dashboard: "Пульс Системи",
+        nav_deep_folders: "Приховані AppData і Документи",
+        nav_dev_gamer: "Профі (Dev & Gamer)",
+        nav_ghost: "Мисливець за Привидами",
+        nav_space_lens: "Рентген Диска",
+        nav_registry: "Інспектор Реєстру",
+        nav_startup: "Автозавантаження і Старт",
+        nav_vault: "Капсула Часу",
+        title: "Пульс Системи та Делікатне Очищення",
+        subtitle: "Транзакційне ядро Zero-Breakage • Підтримка прихованих папок AppData та шляхів із кирилицею",
+        shield_pill: "Щит Безпеки: АКТИВНИЙ",
+        hero_ready_title: "Нейро-Ядро Безпеки mjojo Готове",
+        hero_ready_desc: "Сканує приховані папки AppData (Local/LocalLow/Roaming) та «Мої документи» (з підтримкою кирилиці), захищаючи збереження ігор.",
+        btn_ram: "Прискорення ОЗП",
+        btn_scan: "Розумний Аналіз",
+        btn_clean: "Перевірити і Дозволити Очищення",
+        lbl_reclaimable: "Доступно до очищення",
+        lbl_shields: "Захищено щитами",
+        lbl_vault: "Архів Time-Capsule",
+        lbl_rules: "Навантаження ОЗП (RAM)",
+        panel_rules: "Декларативні модулі делікатного очищення",
+        panel_deep_folders: "Інспектор прихованих папок AppData та «Мої документи» (Підтримка Кирилиці)",
+        panel_dev_gamer: "Артефакти збірки розробника (node_modules, target, .venv, .gradle)",
+        panel_ghost: "Ghost Hunter — Залишкові папки давно видалених програм у AppData",
+        panel_space_lens: "Рентген Диска (Space Lens) — Найбільші файли профілю та документів",
+        panel_registry: "Зрозумілий Інспектор Реєстру (Із захистом знімних дисків)",
+        panel_startup: "Аналізатор Автозавантаження та Часу Старту (HKCU / HKLM Run)",
+        panel_vault: "Оборотні транзакції Time-Capsule (Zstandard + SQLite)",
+        restore_btn: "Відкотити в 1 клік",
+        restored_badge: "Відновлено",
+        empty_vault: "У карантині поки немає транзакцій. Запустіть Розумний Аналіз для перевірки ПК.",
+        empty_registry: "Пошкоджених посилань реєстру не виявлено (або спочатку запустіть Розумний Аналіз).",
+        empty_space_lens: "Запустіть Розумний Аналіз для побудови карти найбільших файлів.",
+        empty_ghost: "Запустіть Розумний Аналіз для звірки прихованих папок AppData зі списком встановлених програм.",
+        modal_title: "Запит Дозволу на Делікатне Очищення",
+        modal_subtitle: "AuraClean нічого не видаляє без вашої явної згоди. Позначте категорії для очищення:",
+        modal_note: "Безпечні категорії позначені за замовчуванням. Ситуативні (кеш шейдерів/збірок) потребують ручної позначки.",
+        modal_cancel: "Скасувати",
+        modal_confirm: "Дозволити і Виконати",
+        reg_checkbox_title: "Осиротілі ключі реєстру (Знімок .reg + JSON)",
+        btn_clean_single: "Очистити окремо",
+        btn_open_explorer: "Папка",
+        btn_disable_startup: "Вимкнути",
+        btn_enable_startup: "Увімкнути",
+        btn_delay_60s: "Відкласти +60с",
+        btn_scanning: "Триває сканування...",
+        btn_export: "Експорт звіту (HTML/JSON)",
+        chart_title: "Розподіл місця за категоріями (Space Lens)"
+      },
+      de: {
+        nav_dashboard: "Systempuls",
+        nav_deep_folders: "Versteckte AppData & Dok.",
+        nav_dev_gamer: "Dev & Gamer",
+        nav_ghost: "Ghost Hunter",
+        nav_space_lens: "Speicher-Röntgen",
+        nav_registry: "Registry-Inspektor",
+        nav_startup: "Autostart & Boot",
+        nav_vault: "Zeitkapsel-Tresor",
+        title: "Systempuls & Sanfte Systempflege",
+        subtitle: "Zero-Breakage Transaktions-Engine • Schutz für versteckte Ordner & Unicode-Pfade",
+        shield_pill: "Zero-Breakage-Schutz: BEREIT",
+        hero_ready_title: "mjojo Neural-Sicherheitskern Bereit",
+        hero_ready_desc: "Prüft Dateisperren (Restart Manager), Cloud-Platzhalter (OneDrive) und 24h-Altersschutz vor jeder Aktion.",
+        btn_ram: "RAM-Boost",
+        btn_scan: "Smart-Scan",
+        btn_clean: "Prüfen & Bereinigung Erlauben",
+        lbl_reclaimable: "Freigebbarer Speicher",
+        lbl_shields: "Geschützte Dateien",
+        lbl_vault: "Zeitkapsel-Tresor",
+        lbl_rules: "RAM-Auslastung",
+        panel_rules: "Deklarative Schutz- & Bereinigungsmodule",
+        panel_deep_folders: "Inspektor für versteckte AppData- & Dokumentenordner",
+        panel_dev_gamer: "Entwickler-Build-Artefakte (node_modules, target, .venv, .gradle)",
+        panel_ghost: "Ghost Hunter — Verwaiste Ordner deinstallierter Programme",
+        panel_space_lens: "Speicher-Röntgen (Space Lens) — Größte Dateien im Profil",
+        panel_registry: "Verständlicher Registry-Inspektor (Wechseldatenträger-geschützt)",
+        panel_startup: "Autostart- & Bootzeit-Profiler (HKCU / HKLM Run)",
+        panel_vault: "Umkehrbare Zeitkapsel-Transaktionen (Zstandard + SQLite)",
+        restore_btn: "1-Klick-Rollback",
+        restored_badge: "Wiederhergestellt",
+        empty_vault: "Noch keine Quarantäne-Snapshots vorhanden. Starten Sie einen Smart-Scan.",
+        empty_registry: "Keine verwaisten Registry-Einträge gefunden.",
+        empty_space_lens: "Starten Sie den Smart-Scan, um große Dateien zu analysieren.",
+        empty_ghost: "Starten Sie den Smart-Scan, um AppData-Reste zu finden.",
+        modal_title: "Bereinigungs-Freigabe & Sicherheitsprüfung",
+        modal_subtitle: "AuraClean löscht niemals ohne Ihre ausdrückliche Zustimmung. Wählen Sie die Kategorien:",
+        modal_note: "Grüne Einträge sind standardmäßig aktiv. Gelbe (Shader/Build-Caches) erfordern manuelle Auswahl.",
+        modal_cancel: "Abbrechen",
+        modal_confirm: "Autorisieren & Ausführen",
+        reg_checkbox_title: "Verwaiste Registry-Schlüssel (.reg + JSON-Snapshot)",
+        btn_clean_single: "Einzeln reinigen",
+        btn_open_explorer: "Ordner",
+        btn_disable_startup: "Deaktivieren",
+        btn_enable_startup: "Aktivieren",
+        btn_delay_60s: "+60s Verzögern",
+        btn_scanning: "System wird gescannt...",
+        btn_export: "Bericht exportieren (HTML/JSON)",
+        chart_title: "Speicherverteilung nach Kategorien (Space Lens)"
+      },
+      es: {
+        nav_dashboard: "Pulso del Sistema",
+        nav_deep_folders: "AppData Ocultos y Docs",
+        nav_dev_gamer: "Dev y Gamer",
+        nav_ghost: "Ghost Hunter",
+        nav_space_lens: "Radiografía de Disco",
+        nav_registry: "Inspector de Registro",
+        nav_startup: "Inicio y Arranque",
+        nav_vault: "Cápsula del Tiempo",
+        title: "Pulso del Sistema y Limpieza Delicada",
+        subtitle: "Motor Transaccional Zero-Breakage • Soporte de Carpetas Ocultas y Unicode",
+        shield_pill: "Escudo Zero-Breakage: ACTIVO",
+        hero_ready_title: "Núcleo de Seguridad Neural mjojo Listo",
+        hero_ready_desc: "Verifica bloqueos de archivos, archivos en la nube (OneDrive) y protección de 24h antes de actuar.",
+        btn_ram: "Optimizar RAM",
+        btn_scan: "Análisis Inteligente",
+        btn_clean: "Revisar y Autorizar Limpieza",
+        lbl_reclaimable: "Espacio Recuperable",
+        lbl_shields: "Archivos Protegidos",
+        lbl_vault: "Cápsula del Tiempo",
+        lbl_rules: "Carga de RAM",
+        panel_rules: "Módulos Declarativos de Limpieza y Protección",
+        panel_deep_folders: "Inspector de Carpetas Ocultas AppData y Mis Documentos",
+        panel_dev_gamer: "Artefactos de Compilación (node_modules, target, .venv, .gradle)",
+        panel_ghost: "Ghost Hunter — Restos de Programas Desinstalados en AppData",
+        panel_space_lens: "Space Lens — Archivos Más Pesados del Perfil",
+        panel_registry: "Inspector de Registro Legible (Protección de USB)",
+        panel_startup: "Analizador de Tiempo de Arranque (HKCU / HKLM Run)",
+        panel_vault: "Transacciones Reversibles Time-Capsule (Zstandard + SQLite)",
+        restore_btn: "Restaurar en 1 Clic",
+        restored_badge: "Restaurado",
+        empty_vault: "Aún no hay instantáneas en cuarentena. Ejecute un Análisis Inteligente.",
+        empty_registry: "No se detectaron claves huérfanas en el registro.",
+        empty_space_lens: "Ejecute el Análisis Inteligente para indexar archivos grandes.",
+        empty_ghost: "Ejecute el Análisis Inteligente para buscar restos en AppData.",
+        modal_title: "Autorización de Limpieza y Seguridad",
+        modal_subtitle: "AuraClean nunca limpia sin su permiso explícito. Seleccione las categorías:",
+        modal_note: "Los elementos verdes están marcados por defecto. Los amarillos requieren selección manual.",
+        modal_cancel: "Cancelar",
+        modal_confirm: "Autorizar y Ejecutar",
+        reg_checkbox_title: "Claves de Registro Huérfanas (Instantánea .reg + JSON)",
+        btn_clean_single: "Limpiar ítem",
+        btn_open_explorer: "Carpeta",
+        btn_disable_startup: "Desactivar",
+        btn_enable_startup: "Activar",
+        btn_delay_60s: "Retrasar +60s",
+        btn_scanning: "Analizando sistema...",
+        btn_export: "Exportar Informe (HTML/JSON)",
+        chart_title: "Distribución de Espacio por Categoría (Space Lens)"
+      },
+      zh: {
+        nav_dashboard: "系统脉搏",
+        nav_deep_folders: "隐藏 AppData 与文档",
+        nav_dev_gamer: "开发者与游戏 (Dev & Gamer)",
+        nav_ghost: "残留猎手 (Ghost Hunter)",
+        nav_space_lens: "磁盘透视 (Space Lens)",
+        nav_registry: "注册表检查器",
+        nav_startup: "开机与启动项",
+        nav_vault: "时间胶囊 (隔离区)",
+        title: "系统脉搏与无损智能清理",
+        subtitle: "Zero-Breakage 事务安全引擎 • 完整支持隐藏目录与多语言路径",
+        shield_pill: "零损坏护盾: 已就绪",
+        hero_ready_title: "mjojo 神经安全核心已就绪",
+        hero_ready_desc: "清理前自动检测进程文件锁、OneDrive 云端占位符及 24 小时新建保护，绝不误删存档。",
+        btn_ram: "内存加速",
+        btn_scan: "智能扫描",
+        btn_clean: "审查并授权清理",
+        lbl_reclaimable: "可安全释放空间",
+        lbl_shields: "受护盾保护文件",
+        lbl_vault: "时间胶囊隔离区",
+        lbl_rules: "物理内存负载",
+        panel_rules: "声明式安全清理模块 (TOML)",
+        panel_deep_folders: "隐藏 AppData 与我的文档深度透视",
+        panel_dev_gamer: "开发者构建缓存 (node_modules, target, .venv, .gradle)",
+        panel_ghost: "Ghost Hunter — 已卸载软件遗留的 AppData 文件夹",
+        panel_space_lens: "磁盘透视 (Space Lens) — 用户目录最大文件排行",
+        panel_registry: "人性化注册表检查器 (支持移动硬盘保护)",
+        panel_startup: "开机启动耗时分析器 (HKCU / HKLM Run)",
+        panel_vault: "时间胶囊可逆事务记录 (Zstandard + SQLite)",
+        restore_btn: "一键回滚恢复",
+        restored_badge: "已恢复",
+        empty_vault: "暂无隔离快照。请先运行智能扫描。",
+        empty_registry: "未检测到无效的孤立注册表项。",
+        empty_space_lens: "请运行智能扫描以索引大型文件。",
+        empty_ghost: "请运行智能扫描以比对已卸载软件残留。",
+        modal_title: "清理权限确认与安全审查",
+        modal_subtitle: "未经您的明确授权，AuraClean 绝不删除任何数据。请勾选要执行的项目：",
+        modal_note: "绿色安全项默认勾选；黄色按需项（着色器/构建目录）需手动勾选。",
+        modal_cancel: "取消",
+        modal_confirm: "授权并执行",
+        reg_checkbox_title: "孤立注册表项 (.reg + JSON 快照备份)",
+        btn_clean_single: "单独清理",
+        btn_open_explorer: "打开目录",
+        btn_disable_startup: "禁用",
+        btn_enable_startup: "启用",
+        btn_delay_60s: "延迟 +60秒",
+        btn_scanning: "正在扫描系统...",
+        btn_export: "导出诊断报告 (HTML/JSON)",
+        chart_title: "各类别空间占用分布图 (Space Lens)"
       }
     };
 
-    let currentLang = 'en';
-    let currentTab = 'dashboard';
     let appState = window.__AURACLEAN_INITIAL_STATE__ || {
       mascotDataUri: "",
       logoDataUri: "",
@@ -953,10 +1298,16 @@
       }
     }
 
+    let currentLang = 'en';
+    let currentTab = 'dashboard';
+    let isScanning = false;
+
     function setLanguage(lang) {
       currentLang = lang;
-      document.getElementById('lang-en').classList.toggle('active', lang === 'en');
-      document.getElementById('lang-ru').classList.toggle('active', lang === 'ru');
+      ['en', 'ru', 'uk', 'de', 'es', 'zh'].forEach(code => {
+        const el = document.getElementById('lang-' + code);
+        if (el) el.classList.toggle('active', code === lang);
+      });
       sendIpc('set_lang', { lang });
       renderUI();
     }
@@ -978,10 +1329,32 @@
       sendIpc('boost_ram');
     }
 
+    function triggerExportReport() {
+      sendIpc('export_report');
+    }
+
     function triggerScan() {
+      if (isScanning) return;
+      isScanning = true;
       const orb = document.getElementById('neural-orb');
       orb.classList.add('scanning');
+      renderScanButtonState();
       sendIpc('scan');
+    }
+
+    function renderScanButtonState() {
+      const t = I18N[currentLang] || I18N.en;
+      const btn = document.getElementById('btn-scan');
+      if (!btn) return;
+      if (isScanning) {
+        btn.disabled = true;
+        btn.classList.add('scanning-locked');
+        btn.innerHTML = `<span class="btn-spinner"></span><span>${t.btn_scanning}</span>`;
+      } else {
+        btn.disabled = false;
+        btn.classList.remove('scanning-locked');
+        btn.innerHTML = `<span>${t.btn_scan}</span>`;
+      }
     }
 
     function openPermissionModal(onlyRuleId = null) {
@@ -1001,12 +1374,12 @@
       }
 
       rules.forEach(r => {
-        const title = currentLang === 'ru' ? r.name_ru : r.name_en;
-        const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
+        const title = isSlavicLocale() ? r.name_ru : r.name_en;
+        const desc = isSlavicLocale() ? r.desc_ru : r.desc_en;
         const defaultChecked = (onlyRuleId || r.safety_level === 'Green') ? 'checked' : '';
         const modeBadge = r.quarantine_tier === 'ArchiveToVault'
-          ? `<span class="badge badge-Purple">⏳ Quarantine Vault</span>`
-          : `<span class="badge badge-Green">🗑 Direct Delete</span>`;
+          ? `<span class="badge badge-Purple">Quarantine Vault</span>`
+          : `<span class="badge badge-Green">Direct Delete</span>`;
         const samplesHtml = (r.sample_paths || [])
           .map(p => `<div class="sample-path">• ${p}</div>`)
           .join('');
@@ -1071,8 +1444,8 @@
 
       const isDirect = cmd === 'clean_single_dev' || cmd === 'delete_space_lens_file';
       const modeTag = isDirect
-        ? `<span class="badge badge-Green">🗑 Direct Delete</span>`
-        : `<span class="badge badge-Purple">⏳ Time-Capsule Quarantine</span>`;
+        ? `<span class="badge badge-Green">Direct Delete</span>`
+        : `<span class="badge badge-Purple">Time-Capsule Quarantine</span>`;
       const modeDesc = isDirect
         ? (currentLang === 'ru'
             ? "Удаляется напрямую без архивации в карантин (все файлы автоматически скачаются/пересоберутся при следующей сборке)."
@@ -1148,6 +1521,7 @@
     }
 
     window.__onBackendStateUpdate = function(newState, toastMsg) {
+      isScanning = false;
       const orb = document.getElementById('neural-orb');
       orb.classList.remove('scanning');
       appState = { ...appState, ...newState };
@@ -1155,8 +1529,12 @@
       if (toastMsg) showToast(toastMsg);
     };
 
+    function isSlavicLocale() {
+      return currentLang === 'ru' || currentLang === 'uk';
+    }
+
     function renderUI() {
-      const t = I18N[currentLang];
+      const t = I18N[currentLang] || I18N.en;
 
       document.getElementById('nav-dashboard').textContent = t.nav_dashboard;
       document.getElementById('nav-deep-folders').textContent = t.nav_deep_folders;
@@ -1167,12 +1545,13 @@
       document.getElementById('nav-startup').textContent = t.nav_startup;
       document.getElementById('nav-vault').textContent = t.nav_vault;
       document.getElementById('btn-ram').textContent = t.btn_ram;
+      document.getElementById('btn-export-report').textContent = t.btn_export;
       document.getElementById('ui-title').textContent = t.title;
       document.getElementById('ui-subtitle').textContent = t.subtitle;
       document.getElementById('ui-shield-pill').textContent = t.shield_pill;
       document.getElementById('hero-status-title').textContent = t.hero_ready_title;
       document.getElementById('hero-status-desc').textContent = t.hero_ready_desc;
-      document.getElementById('btn-scan').textContent = t.btn_scan;
+      renderScanButtonState();
       document.getElementById('btn-clean').textContent = t.btn_clean;
       document.getElementById('lbl-reclaimable').textContent = t.lbl_reclaimable;
       document.getElementById('lbl-shields').textContent = t.lbl_shields;
@@ -1203,6 +1582,16 @@
 
       const listEl = document.getElementById('main-list');
       listEl.innerHTML = '';
+
+      const chartArea = document.getElementById('space-lens-chart-area');
+      if (chartArea) {
+        if (currentTab === 'space_lens') {
+          chartArea.style.display = 'block';
+          renderSpaceLensCategoryChart(chartArea, t);
+        } else {
+          chartArea.style.display = 'none';
+        }
+      }
 
       if (currentTab === 'dev_gamer') {
         document.getElementById('panel-heading').textContent = t.panel_dev_gamer;
@@ -1242,8 +1631,8 @@
         ghosts.forEach(gl => {
           const row = document.createElement('div');
           row.className = 'rule-row';
-          const reason = currentLang === 'ru' ? gl.reasonRu : gl.reasonEn;
-          const saveTag = gl.hasProtectedSavegames ? `<span class="badge badge-Red">🛡 SAVEGAME SHIELDED</span>` : '';
+          const reason = isSlavicLocale() ? gl.reasonRu : gl.reasonEn;
+          const saveTag = gl.hasProtectedSavegames ? `<span class="badge badge-Red">SAVEGAME SHIELDED</span>` : '';
           const safeName = gl.appName.replace(/'/g, "");
           const cleanBtn = gl.hasProtectedSavegames
             ? ''
@@ -1251,7 +1640,7 @@
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
-                <span class="badge badge-Purple">👻 Ghost</span>
+                <span class="badge badge-Purple">Ghost</span>
                 <span>${gl.appName}</span>
                 <span class="badge badge-Yellow">${gl.locationKind}</span>
                 ${saveTag}
@@ -1275,10 +1664,10 @@
         folders.forEach(df => {
           const row = document.createElement('div');
           row.className = 'rule-row';
-          const note = currentLang === 'ru' ? df.noteRu : df.noteEn;
+          const note = isSlavicLocale() ? df.noteRu : df.noteEn;
           const hiddenTag = df.isHidden ? `<span class="badge badge-Purple">HIDDEN</span>` : '';
           const cyrTag = df.hasCyrillic ? `<span class="badge badge-Green">КИРИЛЛИЦА / UTF-16</span>` : '';
-          const saveTag = df.hasProtectedSavegames ? `<span class="badge badge-Red">🛡 SAVEGAME SHIELDED</span>` : '';
+          const saveTag = df.hasProtectedSavegames ? `<span class="badge badge-Red">SAVEGAME SHIELDED</span>` : '';
           const escapedPath = df.fullPath.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
           row.innerHTML = `
             <div class="rule-info">
@@ -1380,8 +1769,8 @@
         regs.forEach(rf => {
           const row = document.createElement('div');
           row.className = 'rule-row';
-          const title = currentLang === 'ru' ? rf.titleRu : rf.titleEn;
-          const reason = currentLang === 'ru' ? rf.reasonRu : rf.reasonEn;
+          const title = isSlavicLocale() ? rf.titleRu : rf.titleEn;
+          const reason = isSlavicLocale() ? rf.reasonRu : rf.reasonEn;
           const safeTitle = title.replace(/'/g, "");
           row.innerHTML = `
             <div class="rule-info">
@@ -1432,8 +1821,8 @@
         rules.forEach(r => {
           const row = document.createElement('div');
           row.className = 'rule-row';
-          const title = currentLang === 'ru' ? r.name_ru : r.name_en;
-          const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
+          const title = isSlavicLocale() ? r.name_ru : r.name_en;
+          const desc = isSlavicLocale() ? r.desc_ru : r.desc_en;
           const hasFiles = (r.scanned_count || 0) > 0;
           const metric = r.scanned_count !== undefined
             ? `${r.scanned_count} files (${formatBytes(r.scanned_bytes)})`
@@ -1442,8 +1831,8 @@
             ? `<button class="btn-item-clean" onclick="requestSingleRuleClean('${r.id}')">${t.btn_clean_single}</button>`
             : '';
           const tierPill = r.quarantine_tier === 'ArchiveToVault'
-            ? `<span class="badge badge-Purple">⏳ Quarantine</span>`
-            : `<span class="badge badge-Green">🗑 Direct Delete</span>`;
+            ? `<span class="badge badge-Purple">Quarantine</span>`
+            : `<span class="badge badge-Green">Direct Delete</span>`;
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
@@ -1461,6 +1850,53 @@
           listEl.appendChild(row);
         });
       }
+    }
+
+    function renderSpaceLensCategoryChart(container, t) {
+      const sr = appState.scanResults || { rulesBytes: 0, devBytes: 0, ghostBytes: 0 };
+      const deepBytes = (appState.deepFolders || []).reduce((acc, d) => acc + (d.sizeBytes || 0), 0);
+      const lensBytes = (appState.spaceLensFiles || []).reduce((acc, f) => acc + (f.sizeBytes || 0), 0);
+
+      const categories = [
+        { label: "Dev & Build Caches", bytes: sr.devBytes || 0, color: "#A855F7" },
+        { label: "Temp & Browser Caches", bytes: sr.rulesBytes || 0, color: "#4ADE80" },
+        { label: "Hidden AppData & Docs", bytes: deepBytes, color: "#38BDF8" },
+        { label: "Large Forgotten Files", bytes: lensBytes, color: "#F59E0B" },
+        { label: "Ghost Remnants", bytes: sr.ghostBytes || 0, color: "#EC4899" }
+      ];
+
+      const grandTotal = categories.reduce((sum, c) => sum + c.bytes, 0) || 1;
+      const barsHtml = categories
+        .filter(c => c.bytes > 0)
+        .map(c => {
+          const pct = Math.max(2, ((c.bytes / grandTotal) * 100).toFixed(1));
+          return `<div class="space-bar-seg" style="width:${pct}%; background:${c.color};" title="${c.label}: ${formatBytes(c.bytes)}"></div>`;
+        })
+        .join('');
+
+      const legendHtml = categories
+        .map(c => {
+          const pct = grandTotal > 1 ? ((c.bytes / grandTotal) * 100).toFixed(1) : "0.0";
+          return `
+            <div class="space-legend-item">
+              <span class="legend-dot" style="background:${c.color};"></span>
+              <span style="color:#E2E8F0;">${c.label}:</span>
+              <strong style="color:#FFFFFF;">${formatBytes(c.bytes)} (${pct}%)</strong>
+            </div>
+          `;
+        })
+        .join('');
+
+      container.innerHTML = `
+        <div class="space-lens-chart-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-size:13px; font-weight:700; color:#D8B4FE;">${t.chart_title}</span>
+            <span style="font-family:var(--font-mono); font-size:12px; color:var(--brand-green);">Total Indexed: ${formatBytes(grandTotal > 1 ? grandTotal : 0)}</span>
+          </div>
+          <div class="space-bar-track">${barsHtml || '<div class="space-bar-seg" style="width:100%; background:rgba(168,85,247,0.25);"></div>'}</div>
+          <div class="space-legend">${legendHtml}</div>
+        </div>
+      `;
     }
 
     window.addEventListener('DOMContentLoaded', () => {

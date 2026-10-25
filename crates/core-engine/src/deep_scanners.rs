@@ -112,7 +112,7 @@ pub fn contains_cyrillic(text: &str) -> bool {
     text.chars().any(|c| ('\u{0400}'..='\u{04FF}').contains(&c))
 }
 
-/// Checks if a directory or file name matches common game save patterns so SaveGames are always shielded (`🛡`).
+/// Checks if a directory or file name matches common game save patterns so SaveGames are always shielded.
 pub fn looks_like_savegame(path: &Path) -> bool {
     let lower = path.to_string_lossy().to_lowercase();
     lower.contains("savegame")
@@ -175,11 +175,11 @@ pub fn scan_hidden_appdata_and_documents(max_results: usize) -> Vec<DeepFolderIn
                     },
                     note_en: format!(
                         "Hidden {root_label} folder for '{folder_name}' ({file_count} files inspected){}",
-                        if has_saves { " • 🛡 SaveGames Shielded" } else { "" }
+                        if has_saves { " • [SaveGames Shielded]" } else { "" }
                     ),
                     note_ru: format!(
                         "Скрытая папка {root_label} приложения «{folder_name}» ({file_count} файлов){}",
-                        if has_saves { " • 🛡 Сохранения защищены" } else { "" }
+                        if has_saves { " • [Сохранения защищены]" } else { "" }
                     ),
                 });
             }
@@ -233,7 +233,7 @@ pub fn scan_hidden_appdata_and_documents(max_results: usize) -> Vec<DeepFolderIn
                     note_en: format!(
                         "Documents subfolder '{folder_name}' ({file_count} files){}",
                         if has_saves {
-                            " • 🛡 SaveGames Protected"
+                            " • [SaveGames Protected]"
                         } else {
                             ""
                         }
@@ -241,7 +241,7 @@ pub fn scan_hidden_appdata_and_documents(max_results: usize) -> Vec<DeepFolderIn
                     note_ru: format!(
                         "Подпапка в «Мои документы»: «{folder_name}» ({file_count} файлов){}",
                         if has_saves {
-                            " • 🛡 Сохранения защищены"
+                            " • [Сохранения защищены]"
                         } else {
                             ""
                         }

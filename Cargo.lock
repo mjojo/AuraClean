@@ -113,7 +113,7 @@ dependencies = [
 
 [[package]]
 name = "auraclean-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -127,7 +127,7 @@ dependencies = [
 
 [[package]]
 name = "auraclean-gui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64",
@@ -387,7 +387,7 @@ dependencies = [
 
 [[package]]
 name = "core-engine"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "ipc-protocol",
@@ -651,7 +651,7 @@ checksum = "0e9c71c2167ca323c882b99918929403426e2373ea17242ff5653e0d5e1058be"
 
 [[package]]
 name = "elevated-service"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "core-engine",
@@ -1353,7 +1353,7 @@ dependencies = [
 
 [[package]]
 name = "ipc-protocol"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "serde",
@@ -2393,7 +2393,7 @@ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
 name = "safety-guard"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",

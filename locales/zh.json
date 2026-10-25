@@ -1,0 +1,19 @@
+{
+  "app": {
+    "name": "AuraClean",
+    "vendor": "mjojo",
+    "tagline": "基于 Rust 打造的新一代超安全 Windows 系统维护套件"
+  },
+  "nav": {
+    "dashboard": "系统脉搏",
+    "space_lens": "磁盘透视 (Space Lens)",
+    "profiles": "智能配置",
+    "startup": "开机与启动项",
+    "time_capsule": "时间胶囊 (隔离区)"
+  },
+  "safety": {
+    "green": "100% 安全 (绿色)",
+    "yellow": "按需清理 (黄色)",
+    "red": "系统保护 / 已锁定 (红色)"
+  }
+}
