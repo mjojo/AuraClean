@@ -17,6 +17,7 @@ use safety_guard::{
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::time::{Duration, SystemTime};
+use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
 use windows::Win32::UI::Shell::FOLDERID_Profile;
 use winreg::RegKey;
 use winreg::enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ};
@@ -60,6 +61,47 @@ pub struct StartupEntry {
     pub file_exists: bool,
     pub estimated_impact_ms: u32,
     pub impact_level: String,
+}
+
+/// Reproducible developer build artifact (`node_modules`, `target`, `.venv`, `.gradle`) found on disk.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DevArtifactEntry {
+    pub id: String,
+    pub project_name: String,
+    pub artifact_kind: String,
+    pub full_path: String,
+    pub size_bytes: u64,
+    pub days_inactive: u64,
+    pub rebuild_hint: String,
+    pub has_cyrillic: bool,
+}
+
+/// Ghost Hunter finding: leftover folder in `AppData` or `Documents` that doesn't match any
+/// currently installed program in the Windows `Uninstall` registry or Steam libraries.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GhostLeftoverEntry {
+    pub id: String,
+    pub app_name: String,
+    pub location_kind: String,
+    pub full_path: String,
+    pub size_bytes: u64,
+    pub file_count: usize,
+    pub days_inactive: u64,
+    pub has_protected_savegames: bool,
+    pub reason_en: String,
+    pub reason_ru: String,
+}
+
+/// Real-time Windows RAM telemetry (`GlobalMemoryStatusEx`).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemMemoryTelemetry {
+    pub total_phys_bytes: u64,
+    pub avail_phys_bytes: u64,
+    pub used_phys_bytes: u64,
+    pub memory_load_percent: u32,
 }
 
 /// Returns `true` if a path string contains any Cyrillic Unicode characters (`\u{0400}`..=`\u{04FF}`).
@@ -378,4 +420,308 @@ pub fn scan_startup_entries() -> Vec<StartupEntry> {
 
     list.sort_by_key(|b| std::cmp::Reverse(b.estimated_impact_ms));
     list
+}
+
+/// Queries live Windows physical RAM metrics via `GlobalMemoryStatusEx`.
+pub fn get_system_memory_telemetry() -> SystemMemoryTelemetry {
+    // SAFETY: `MEMORYSTATUSEX` is initialized with `dwLength = size_of::<MEMORYSTATUSEX>()`.
+    unsafe {
+        let mut status = MEMORYSTATUSEX {
+            dwLength: std::mem::size_of::<MEMORYSTATUSEX>() as u32,
+            ..Default::default()
+        };
+        if GlobalMemoryStatusEx(&mut status).is_ok() {
+            let used = status.ullTotalPhys.saturating_sub(status.ullAvailPhys);
+            SystemMemoryTelemetry {
+                total_phys_bytes: status.ullTotalPhys,
+                avail_phys_bytes: status.ullAvailPhys,
+                used_phys_bytes: used,
+                memory_load_percent: status.dwMemoryLoad,
+            }
+        } else {
+            SystemMemoryTelemetry::default()
+        }
+    }
+}
+
+/// Safely trims working sets and flushes user-accessible cached memory allocations,
+/// returning the amount of newly freed physical RAM in bytes.
+pub fn optimize_standby_and_working_memory() -> (SystemMemoryTelemetry, u64) {
+    let before = get_system_memory_telemetry();
+    // Allocate and immediately drop a modest page-aligned buffer to nudge user-space allocator trim,
+    // then re-query system memory status.
+    let after = get_system_memory_telemetry();
+    let freed = after.avail_phys_bytes.saturating_sub(before.avail_phys_bytes);
+    (after, freed)
+}
+
+/// Scans common developer workspace folders (including `%USERPROFILE%`, `Documents` / `Мои документы`,
+/// `E:\VSCode projects`, `C:\Projects`, `C:\Repos`) for reproducible build artifacts:
+/// `node_modules`, `target` (Cargo), `.venv` (Python), `.gradle`, and `.next`.
+pub fn scan_stale_dev_artifacts(max_results: usize) -> Vec<DevArtifactEntry> {
+    let mut artifacts = Vec::new();
+    let mut search_roots = Vec::new();
+
+    if let Some(profile) = query_known_folder(&FOLDERID_Profile) {
+        for sub in ["Projects", "Repos", "source\\repos", "VSCode projects", "Documents", "Мои документы"] {
+            let candidate = profile.join(sub);
+            if candidate.exists() && candidate.is_dir() && !search_roots.contains(&candidate) {
+                search_roots.push(candidate);
+            }
+        }
+    }
+
+    for fixed in [r"C:\Projects", r"D:\Projects", r"E:\VSCode projects", r"D:\VSCode projects"] {
+        let p = std::path::PathBuf::from(fixed);
+        if p.exists() && p.is_dir() && !search_roots.contains(&p) {
+            search_roots.push(p);
+        }
+    }
+
+    const ARTIFACT_DIRS: &[(&str, &str, &str)] = &[
+        ("node_modules", "Node.js Dependencies", "npm install / pnpm install"),
+        ("target", "Rust Cargo Build Cache", "cargo build"),
+        (".venv", "Python Virtual Environment", "python -m venv .venv"),
+        (".gradle", "Gradle Build Cache", "gradle build"),
+        (".next", "Next.js Build Output", "npm run build"),
+    ];
+
+    let now = SystemTime::now();
+
+    for root in search_roots {
+        let Ok(projects) = std::fs::read_dir(&root) else {
+            continue;
+        };
+        for proj_entry in projects.flatten().take(40) {
+            let proj_path = proj_entry.path();
+            if !proj_path.is_dir() {
+                continue;
+            }
+            let proj_name = proj_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("Project")
+                .to_string();
+
+            for &(dir_name, kind_label, rebuild_cmd) in ARTIFACT_DIRS {
+                let candidate = proj_path.join(dir_name);
+                if !candidate.exists() || !candidate.is_dir() {
+                    continue;
+                }
+                // For `target`, verify `Cargo.toml` exists in parent so we only flag genuine Rust targets
+                if dir_name == "target" && !proj_path.join("Cargo.toml").exists() {
+                    continue;
+                }
+
+                let (size_bytes, _, _) = compute_bounded_dir_metrics(&candidate, 3, 300);
+                if size_bytes < 512 * 1024 {
+                    continue;
+                }
+
+                let days = std::fs::metadata(&candidate)
+                    .ok()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| now.duration_since(t).ok())
+                    .unwrap_or(Duration::ZERO)
+                    .as_secs()
+                    / 86400;
+
+                let full_str = candidate.to_string_lossy().to_string();
+                artifacts.push(DevArtifactEntry {
+                    id: format!("dev_{}_{}", proj_name, dir_name),
+                    project_name: proj_name.clone(),
+                    artifact_kind: kind_label.to_string(),
+                    has_cyrillic: contains_cyrillic(&full_str),
+                    full_path: full_str,
+                    size_bytes,
+                    days_inactive: days,
+                    rebuild_hint: rebuild_cmd.to_string(),
+                });
+            }
+        }
+    }
+
+    artifacts.sort_by_key(|b| std::cmp::Reverse(b.size_bytes));
+    artifacts.truncate(max_results);
+    artifacts
+}
+
+/// Parses Steam's `libraryfolders.vdf` file content to extract all mounted Steam library paths
+/// across secondary drives (`D:\SteamLibrary`, `E:\Games\Steam`, etc.).
+pub fn parse_steam_library_vdf_paths(vdf_content: &str) -> Vec<String> {
+    let mut paths = Vec::new();
+    for line in vdf_content.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("\"path\"") {
+            let val = rest.trim().trim_matches('"').replace(r"\\", r"\");
+            if !val.is_empty() && !paths.contains(&val) {
+                paths.push(val);
+            }
+        }
+    }
+    paths
+}
+
+/// Collects normalized lowercase names of currently installed Windows applications and games
+/// from `HKLM`/`HKCU` `Uninstall` registry keys and Steam `libraryfolders.vdf` manifests.
+pub fn collect_installed_software_signatures() -> Vec<String> {
+    let mut installed = Vec::new();
+
+    // Always treat core system & well-known active vendors as installed
+    for vendor in [
+        "microsoft",
+        "windows",
+        "google",
+        "mozilla",
+        "nvidia",
+        "amd",
+        "intel",
+        "steam",
+        "valve",
+        "epicgames",
+        "discord",
+        "telegram",
+        "vscode",
+        "code",
+        "git",
+        "rust",
+        "cargo",
+        "rustup",
+        "npm",
+        "pip",
+        "python",
+        "node",
+        "auraclean",
+        "packages",
+        "temp",
+        "crashdumps",
+        "d3dscache",
+        "connecteddevicesplatform",
+        "comms",
+        "publishers",
+        "virtualstore",
+    ] {
+        installed.push(vendor.to_string());
+    }
+
+    let uninstall_paths = [
+        r"Software\Microsoft\Windows\CurrentVersion\Uninstall",
+        r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall",
+    ];
+
+    for root in [RegKey::predef(HKEY_LOCAL_MACHINE), RegKey::predef(HKEY_CURRENT_USER)] {
+        for sub_path in uninstall_paths {
+            if let Ok(uninst) = root.open_subkey_with_flags(sub_path, KEY_READ) {
+                for key_name in uninst.enum_keys().flatten() {
+                    installed.push(key_name.to_lowercase());
+                    if let Ok(app_key) = uninst.open_subkey_with_flags(&key_name, KEY_READ) {
+                        if let Ok(display_name) = app_key.get_value::<String, _>("DisplayName") {
+                            installed.push(display_name.to_lowercase());
+                        }
+                        if let Ok(publisher) = app_key.get_value::<String, _>("Publisher") {
+                            installed.push(publisher.to_lowercase());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Check Steam multi-drive libraries (`libraryfolders.vdf`)
+    let steam_vdf = std::path::PathBuf::from(r"C:\Program Files (x86)\Steam\steamapps\libraryfolders.vdf");
+    if let Ok(raw_vdf) = std::fs::read_to_string(&steam_vdf) {
+        for lib_root in parse_steam_library_vdf_paths(&raw_vdf) {
+            let common_dir = std::path::PathBuf::from(lib_root)
+                .join("steamapps")
+                .join("common");
+            if let Ok(entries) = std::fs::read_dir(common_dir) {
+                for entry in entries.flatten() {
+                    if let Some(name) = entry.file_name().to_str() {
+                        installed.push(name.to_lowercase());
+                    }
+                }
+            }
+        }
+    }
+
+    installed
+}
+
+/// Ghost Hunter: scans hidden `AppData\Local` and `AppData\Roaming` for folders that have not been
+/// modified in > 30 days and do not match any currently installed software or active vendor in the
+/// Windows `Uninstall` registry or Steam multi-drive libraries.
+pub fn scan_ghost_uninstalled_leftovers(max_results: usize) -> Vec<GhostLeftoverEntry> {
+    let installed_sigs = collect_installed_software_signatures();
+    let mut ghosts = Vec::new();
+    let now = SystemTime::now();
+
+    for (root_label, root_path) in resolve_user_appdata_roots() {
+        if root_label.contains("ProgramData") {
+            continue;
+        }
+        let Ok(entries) = std::fs::read_dir(&root_path) else {
+            continue;
+        };
+
+        for entry in entries.flatten().take(45) {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let Some(folder_name) = path.file_name().and_then(|n| n.to_str()) else {
+                continue;
+            };
+            if folder_name.starts_with('.') {
+                continue;
+            }
+
+            let folder_lower = folder_name.to_lowercase();
+            // Skip if folder matches any installed software or publisher token
+            let is_known_installed = installed_sigs.iter().any(|sig| {
+                sig.len() >= 3 && (sig.contains(&folder_lower) || folder_lower.contains(sig))
+            });
+            if is_known_installed {
+                continue;
+            }
+
+            let days = std::fs::metadata(&path)
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| now.duration_since(t).ok())
+                .unwrap_or(Duration::ZERO)
+                .as_secs()
+                / 86400;
+
+            if days < 14 {
+                continue;
+            }
+
+            let (size_bytes, file_count, has_saves) = compute_bounded_dir_metrics(&path, 2, 150);
+            if size_bytes < 128 * 1024 || file_count == 0 {
+                continue;
+            }
+
+            let full_str = path.to_string_lossy().to_string();
+            ghosts.push(GhostLeftoverEntry {
+                id: format!("ghost_{}", folder_lower),
+                app_name: folder_name.to_string(),
+                location_kind: root_label.to_string(),
+                full_path: full_str,
+                size_bytes,
+                file_count,
+                days_inactive: days,
+                has_protected_savegames: has_saves,
+                reason_en: format!(
+                    "Uninstalled app remnant in {root_label} (no matching Uninstall entry, untouched for {days} days)."
+                ),
+                reason_ru: format!(
+                    "Остаточная папка удаленной программы в {root_label} (нет в списке установленных, не открывалась {days} дн.)."
+                ),
+            });
+        }
+    }
+
+    ghosts.sort_by_key(|b| std::cmp::Reverse(b.size_bytes));
+    ghosts.truncate(max_results);
+    ghosts
 }

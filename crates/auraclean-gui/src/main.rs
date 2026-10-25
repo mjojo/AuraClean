@@ -9,10 +9,12 @@
 use anyhow::Result;
 use base64::Engine;
 use core_engine::{
-    CleaningRule, DeepFolderInsight, RegistryFinding, SpaceLensFileEntry, StartupEntry,
-    load_rules_from_dir, resolve_base_directories, scan_directory_with_rule,
+    CleaningRule, DeepFolderInsight, DevArtifactEntry, GhostLeftoverEntry, RegistryFinding,
+    SpaceLensFileEntry, StartupEntry, SystemMemoryTelemetry, get_system_memory_telemetry,
+    load_rules_from_dir, optimize_standby_and_working_memory, resolve_base_directories,
+    scan_directory_with_rule, scan_ghost_uninstalled_leftovers,
     scan_hidden_appdata_and_documents, scan_safe_registry_zones, scan_space_lens_top_files,
-    scan_startup_entries,
+    scan_stale_dev_artifacts, scan_startup_entries,
 };
 use ipc_protocol::{Locale, ScannedItem, VaultTransactionSummary};
 use safety_guard::{QuarantineCandidate, RegistrySnapshotEntry, TimeCapsuleVault, VaultConfig};
@@ -90,6 +92,9 @@ struct FrontendState {
     deep_folders: Vec<DeepFolderInsight>,
     space_lens_files: Vec<SpaceLensFileEntry>,
     startup_entries: Vec<StartupEntry>,
+    dev_artifacts: Vec<DevArtifactEntry>,
+    ghost_leftovers: Vec<GhostLeftoverEntry>,
+    memory_telemetry: SystemMemoryTelemetry,
     scan_results: Option<ScanUiSummary>,
     transactions: Vec<VaultTransactionSummary>,
     vault_bytes: u64,
@@ -150,6 +155,9 @@ fn main() -> Result<()> {
         deep_folders: scan_hidden_appdata_and_documents(25),
         space_lens_files: Vec::new(),
         startup_entries: scan_startup_entries(),
+        dev_artifacts: scan_stale_dev_artifacts(20),
+        ghost_leftovers: Vec::new(),
+        memory_telemetry: get_system_memory_telemetry(),
         scan_results: None,
         transactions: vault.list_transactions().unwrap_or_default(),
         vault_bytes: vault.current_vault_footprint_bytes().unwrap_or(0),
@@ -274,6 +282,9 @@ fn handle_ui_command(
             let deep_folders = scan_hidden_appdata_and_documents(30);
             let space_lens_files = scan_space_lens_top_files(5 * 1024 * 1024, 25);
             let startup_entries = scan_startup_entries();
+            let dev_artifacts = scan_stale_dev_artifacts(25);
+            let ghost_leftovers = scan_ghost_uninstalled_leftovers(25);
+            let memory_telemetry = get_system_memory_telemetry();
 
             let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
             let mut guard = shared.lock().unwrap();
@@ -282,6 +293,9 @@ fn handle_ui_command(
             guard.frontend_state.deep_folders = deep_folders;
             guard.frontend_state.space_lens_files = space_lens_files;
             guard.frontend_state.startup_entries = startup_entries;
+            guard.frontend_state.dev_artifacts = dev_artifacts;
+            guard.frontend_state.ghost_leftovers = ghost_leftovers;
+            guard.frontend_state.memory_telemetry = memory_telemetry;
             guard.frontend_state.scan_results = Some(ScanUiSummary {
                 total_items: all_items.len(),
                 total_bytes,
@@ -462,6 +476,28 @@ fn handle_ui_command(
                         toast: Some(toast),
                     });
                 }
+            }
+        }
+        "boost_ram" => {
+            let (telemetry, freed_bytes) = optimize_standby_and_working_memory();
+            let mut guard = shared.lock().unwrap();
+            guard.frontend_state.memory_telemetry = telemetry;
+            let freed_mb = freed_bytes / (1024 * 1024);
+            let toast = match locale {
+                Locale::En => format!(
+                    "RAM Standby & Working Set optimized (Load: {}%, Freed: ~{} MB)",
+                    guard.frontend_state.memory_telemetry.memory_load_percent, freed_mb
+                ),
+                Locale::Ru => format!(
+                    "ОЗУ оптимизирована перед запуском игры (Загрузка: {}%, Освобождено: ~{} МБ)",
+                    guard.frontend_state.memory_telemetry.memory_load_percent, freed_mb
+                ),
+            };
+            if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                let _ = proxy.send_event(UserEvent::BackendUpdated {
+                    state_json,
+                    toast: Some(toast),
+                });
             }
         }
         _ => {}

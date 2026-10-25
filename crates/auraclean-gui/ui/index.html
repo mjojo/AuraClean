@@ -565,6 +565,8 @@
     <nav class="nav-list">
       <button class="nav-btn active" onclick="switchTab('dashboard')" id="nav-dashboard">⚡ System Pulse</button>
       <button class="nav-btn" onclick="switchTab('deep_folders')" id="nav-deep-folders">🕵️ Hidden AppData &amp; Docs</button>
+      <button class="nav-btn" onclick="switchTab('dev_gamer')" id="nav-dev-gamer">🛠 Dev &amp; Gamer</button>
+      <button class="nav-btn" onclick="switchTab('ghost_hunter')" id="nav-ghost">👻 Ghost Hunter</button>
       <button class="nav-btn" onclick="switchTab('space_lens')" id="nav-space-lens">🪐 Space Lens</button>
       <button class="nav-btn" onclick="switchTab('registry')" id="nav-registry">🧠 Registry Inspector</button>
       <button class="nav-btn" onclick="switchTab('startup')" id="nav-startup">⏱ Boot &amp; Startup</button>
@@ -601,6 +603,7 @@
         </div>
       </div>
       <div class="hero-actions">
+        <button class="btn-secondary" id="btn-ram" onclick="triggerRamBoost()">🚀 RAM Boost</button>
         <button class="btn-primary" id="btn-scan" onclick="triggerScan()">🔍 Smart Scan</button>
         <button class="btn-secondary" id="btn-clean" onclick="openPermissionModal()" style="display:none;">🛡 Review &amp; Approve Cleanup</button>
       </div>
@@ -666,6 +669,8 @@
       en: {
         nav_dashboard: "⚡ System Pulse",
         nav_deep_folders: "🕵️ Hidden AppData & Docs",
+        nav_dev_gamer: "🛠 Dev & Gamer",
+        nav_ghost: "👻 Ghost Hunter",
         nav_space_lens: "🪐 Space Lens",
         nav_registry: "🧠 Registry Inspector",
         nav_startup: "⏱ Boot & Startup",
@@ -675,14 +680,17 @@
         shield_pill: "🛡 Zero-Breakage Shield: READY",
         hero_ready_title: "Neural Safety Core Ready",
         hero_ready_desc: "Scans hidden AppData (Local/LocalLow/Roaming) & My Documents (Cyrillic UTF-16 aware), shielding locked files & SaveGames.",
+        btn_ram: "🚀 RAM Boost",
         btn_scan: "🔍 Smart Scan",
         btn_clean: "🛡 Review & Approve Cleanup",
         lbl_reclaimable: "Safe to Reclaim",
         lbl_shields: "Shielded Files",
         lbl_vault: "Time-Capsule Vault",
-        lbl_rules: "Active Rules",
+        lbl_rules: "System RAM Load",
         panel_rules: "Declarative Protection & Cleaning Modules",
         panel_deep_folders: "Hidden AppData (Local/LocalLow/Roaming) & My Documents Inspector (Cyrillic Aware)",
+        panel_dev_gamer: "Dev & Creator Build Artifacts (node_modules, target, .venv, .gradle)",
+        panel_ghost: "Ghost Hunter — Leftover Folders from Uninstalled Software",
         panel_space_lens: "Space Lens — Top Heavy Files across Profile & Documents",
         panel_registry: "Human-Readable Registry Inspector (Removable-Drive Aware)",
         panel_startup: "Boot & Startup Impact Profiler (HKCU / HKLM Run)",
@@ -692,6 +700,7 @@
         empty_vault: "No quarantine snapshots yet. Run a Smart Scan to inspect your system.",
         empty_registry: "No orphaned registry references detected (or run Smart Scan first).",
         empty_space_lens: "Run Smart Scan to index top heavy files across your profile.",
+        empty_ghost: "Run Smart Scan to cross-reference hidden AppData against installed software.",
         modal_title: "🛡 Cleanup Permission & Safety Authorization",
         modal_subtitle: "AuraClean never cleans without your explicit permission. Uncheck any category you wish to keep:",
         modal_note: "🟢 Green items are checked by default. 🟡 Yellow (shader/dev caches) are unchecked by default.",
@@ -702,6 +711,8 @@
       ru: {
         nav_dashboard: "⚡ Пульс Системы",
         nav_deep_folders: "🕵️ Скрытые AppData и Документы",
+        nav_dev_gamer: "🛠 Профи (Dev & Gamer)",
+        nav_ghost: "👻 Охотник за Призраками",
         nav_space_lens: "🪐 Рентген Диска",
         nav_registry: "🧠 Инспектор Реестра",
         nav_startup: "⏱ Автозагрузка и Старт",
@@ -711,14 +722,17 @@
         shield_pill: "🛡 Щит Безопасности: АКТИВЕН",
         hero_ready_title: "Нейро-Ядро Безопасности mjojo Готово",
         hero_ready_desc: "Сканирует скрытые папки AppData (Local/LocalLow/Roaming) и «Мои документы» (с пониманием кириллицы), защищая сохранения игр.",
+        btn_ram: "🚀 Разгон ОЗУ",
         btn_scan: "🔍 Умный Анализ",
         btn_clean: "🛡 Проверить и Разрешить Очистку",
         lbl_reclaimable: "Доступно к очистке",
         lbl_shields: "Защищено щитами",
         lbl_vault: "Архив Time-Capsule",
-        lbl_rules: "База TOML-правил",
+        lbl_rules: "Нагрузка ОЗУ (RAM)",
         panel_rules: "Декларативные модули деликатной очистки",
         panel_deep_folders: "Инспектор скрытых папок AppData и «Мои документы» (Поддержка Кириллицы)",
+        panel_dev_gamer: "Артефакты сборки разработчика (node_modules, target, .venv, .gradle)",
+        panel_ghost: "Ghost Hunter — Остаточные папки давно удаленных программ в AppData",
         panel_space_lens: "Рентген Диска (Space Lens) — Самые тяжелые файлы профиля и документов",
         panel_registry: "Человекочитаемый Инспектор Реестра (С защитой съемных дисков)",
         panel_startup: "Анализатор Автозагрузки и Времени Старта (HKCU / HKLM Run)",
@@ -728,6 +742,7 @@
         empty_vault: "В карантине пока нет транзакций. Запустите Умный Анализ для проверки ПК.",
         empty_registry: "Битых ссылок реестра не обнаружено (или сначала запустите Умный Анализ).",
         empty_space_lens: "Запустите Умный Анализ для построения карты самых крупных файлов.",
+        empty_ghost: "Запустите Умный Анализ для сверки скрытых папок AppData со списком установленных программ.",
         modal_title: "🛡 Запрос Разрешения на Деликатную Очистку",
         modal_subtitle: "AuraClean ничего не трогает без вашего явного согласия. Отметьте категории для переноса в Капсулу Времени:",
         modal_note: "🟢 Безопасные категории отмечены по умолчанию. 🟡 Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
@@ -774,11 +789,17 @@
       currentTab = tab;
       document.getElementById('nav-dashboard').classList.toggle('active', tab === 'dashboard');
       document.getElementById('nav-deep-folders').classList.toggle('active', tab === 'deep_folders');
+      document.getElementById('nav-dev-gamer').classList.toggle('active', tab === 'dev_gamer');
+      document.getElementById('nav-ghost').classList.toggle('active', tab === 'ghost_hunter');
       document.getElementById('nav-space-lens').classList.toggle('active', tab === 'space_lens');
       document.getElementById('nav-registry').classList.toggle('active', tab === 'registry');
       document.getElementById('nav-startup').classList.toggle('active', tab === 'startup');
       document.getElementById('nav-vault').classList.toggle('active', tab === 'vault');
       renderUI();
+    }
+
+    function triggerRamBoost() {
+      sendIpc('boost_ram');
     }
 
     function triggerScan() {
@@ -897,10 +918,13 @@
 
       document.getElementById('nav-dashboard').textContent = t.nav_dashboard;
       document.getElementById('nav-deep-folders').textContent = t.nav_deep_folders;
+      document.getElementById('nav-dev-gamer').textContent = t.nav_dev_gamer;
+      document.getElementById('nav-ghost').textContent = t.nav_ghost;
       document.getElementById('nav-space-lens').textContent = t.nav_space_lens;
       document.getElementById('nav-registry').textContent = t.nav_registry;
       document.getElementById('nav-startup').textContent = t.nav_startup;
       document.getElementById('nav-vault').textContent = t.nav_vault;
+      document.getElementById('btn-ram').textContent = t.btn_ram;
       document.getElementById('ui-title').textContent = t.title;
       document.getElementById('ui-subtitle').textContent = t.subtitle;
       document.getElementById('ui-shield-pill').textContent = t.shield_pill;
@@ -914,7 +938,13 @@
       document.getElementById('lbl-rules').textContent = t.lbl_rules;
 
       const rules = appState.rules || [];
-      document.getElementById('val-rules').textContent = rules.length;
+      if (appState.memoryTelemetry && appState.memoryTelemetry.totalPhysBytes > 0) {
+        const mem = appState.memoryTelemetry;
+        document.getElementById('val-rules').textContent = `${mem.memoryLoadPercent}%`;
+        document.getElementById('sub-rules').textContent = `${formatBytes(mem.availPhysBytes)} free / ${formatBytes(mem.totalPhysBytes)}`;
+      } else {
+        document.getElementById('val-rules').textContent = rules.length;
+      }
       document.getElementById('val-vault').textContent = formatBytes(appState.vaultBytes || 0);
       const activeTxCount = (appState.transactions || []).filter(tx => !tx.restored).length;
       document.getElementById('sub-vault').textContent = `${activeTxCount} active snapshots`;
@@ -930,6 +960,60 @@
 
       const listEl = document.getElementById('main-list');
       listEl.innerHTML = '';
+
+      if (currentTab === 'dev_gamer') {
+        document.getElementById('panel-heading').textContent = t.panel_dev_gamer;
+        const devs = appState.devArtifacts || [];
+        devs.forEach(da => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const cyrTag = da.hasCyrillic ? `<span class="badge badge-Green">UTF-16</span>` : '';
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Yellow">${da.artifactKind}</span>
+                <span>${da.projectName}</span>
+                ${cyrTag}
+              </div>
+              <div class="rule-desc">Rebuild command: <code>${da.rebuildHint}</code> • Inactive: ${da.daysInactive} days</div>
+              <div class="sample-path">${da.fullPath}</div>
+            </div>
+            <div class="rule-metric">${formatBytes(da.sizeBytes)}</div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
+
+      if (currentTab === 'ghost_hunter') {
+        document.getElementById('panel-heading').textContent = t.panel_ghost;
+        const ghosts = appState.ghostLeftovers || [];
+        if (ghosts.length === 0) {
+          listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_ghost}</span></div>`;
+          return;
+        }
+        ghosts.forEach(gl => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const reason = currentLang === 'ru' ? gl.reasonRu : gl.reasonEn;
+          const saveTag = gl.hasProtectedSavegames ? `<span class="badge badge-Red">🛡 SAVEGAME SHIELDED</span>` : '';
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Purple">👻 Ghost</span>
+                <span>${gl.appName}</span>
+                <span class="badge badge-Yellow">${gl.locationKind}</span>
+                ${saveTag}
+              </div>
+              <div class="rule-desc">${reason}</div>
+              <div class="sample-path">${gl.fullPath}</div>
+            </div>
+            <div class="rule-metric">${formatBytes(gl.sizeBytes)} (${gl.fileCount} files)</div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
 
       if (currentTab === 'deep_folders') {
         document.getElementById('panel-heading').textContent = t.panel_deep_folders;

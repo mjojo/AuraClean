@@ -7,8 +7,12 @@ pub mod known_folders;
 pub mod registry_inspector;
 
 pub use deep_scanners::{
-    DeepFolderInsight, SpaceLensFileEntry, StartupEntry, contains_cyrillic, looks_like_savegame,
-    scan_hidden_appdata_and_documents, scan_space_lens_top_files, scan_startup_entries,
+    DeepFolderInsight, DevArtifactEntry, GhostLeftoverEntry, SpaceLensFileEntry, StartupEntry,
+    SystemMemoryTelemetry, collect_installed_software_signatures, contains_cyrillic,
+    get_system_memory_telemetry, looks_like_savegame, optimize_standby_and_working_memory,
+    parse_steam_library_vdf_paths, scan_ghost_uninstalled_leftovers,
+    scan_hidden_appdata_and_documents, scan_space_lens_top_files, scan_stale_dev_artifacts,
+    scan_startup_entries,
 };
 pub use known_folders::{
     expand_known_and_env_vars, expand_wildcard_directories, is_hidden_entry, query_known_folder,
@@ -383,6 +387,40 @@ mod tests {
         let resolved_b = expand_wildcard_directories(&pattern_b);
         assert_eq!(resolved_b, vec![my_docs_logs]);
         assert!(contains_cyrillic(&pattern_b));
+    }
+
+    #[test]
+    fn test_steam_multi_drive_vdf_parser_and_ram_telemetry() {
+        let sample_vdf = r#"
+"libraryfolders"
+{
+    "0"
+    {
+        "path"      "C:\\Program Files (x86)\\Steam"
+    }
+    "1"
+    {
+        "path"      "D:\\SteamLibrary"
+    }
+    "2"
+    {
+        "path"      "E:\\Игры\\Steam"
+    }
+}
+"#;
+        let libs = parse_steam_library_vdf_paths(sample_vdf);
+        assert_eq!(
+            libs,
+            vec![
+                r"C:\Program Files (x86)\Steam".to_string(),
+                r"D:\SteamLibrary".to_string(),
+                r"E:\Игры\Steam".to_string(),
+            ]
+        );
+
+        let ram = get_system_memory_telemetry();
+        assert!(ram.total_phys_bytes > 0, "Total physical RAM must be non-zero");
+        assert!(ram.memory_load_percent <= 100);
     }
 }
 
