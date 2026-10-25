@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run AuraClean GUI (1-Click)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/release/AuraClean.exe",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Build AuraClean Release (.exe)"
+    }
+  ]
+}

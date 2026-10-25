@@ -1,0 +1,46 @@
+# AuraClean Declarative Cleaning Rules — Developer & Media Creator Caches
+# Maintained by mjojo (https://github.com/mjojo/AuraClean)
+
+schema_version = 1
+category = "devtools"
+
+[[rule]]
+id = "npm_download_cache"
+category = "devtools"
+safety_level = "Yellow"
+quarantine_tier = "ManifestOnly"
+detect_processes = ["node.exe", "npm.cmd"]
+min_age_hours = 48
+paths = [
+    "%LOCALAPPDATA%\\npm-cache\\_cacache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "Node.js (npm) Package Cache"
+description = "Cached tarballs downloaded by npm. Re-downloaded automatically when needed."
+
+[rule.i18n.ru]
+name = "Кэш пакетов Node.js (npm-cache)"
+description = "Кэшированные архивы скачанных npm-пакетов. При необходимости скачиваются заново автоматически."
+
+[[rule]]
+id = "pip_http_cache"
+category = "devtools"
+safety_level = "Yellow"
+quarantine_tier = "ManifestOnly"
+detect_processes = ["python.exe", "pip.exe"]
+min_age_hours = 48
+paths = [
+    "%LOCALAPPDATA%\\pip\\cache\\http-v2\\*",
+    "%LOCALAPPDATA%\\pip\\cache\\wheels\\*"
+]
+exclude_patterns = []
+
+[rule.i18n.en]
+name = "Python (pip) Wheel & HTTP Cache"
+description = "Cached Python wheels and HTTP downloads stored by pip."
+
+[rule.i18n.ru]
+name = "Кэш пакетов Python (pip wheels & HTTP)"
+description = "Кэшированные пакеты wheel и загрузки пакетного менеджера pip."

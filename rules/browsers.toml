@@ -1,0 +1,47 @@
+# AuraClean Declarative Cleaning Rules — Web Browsers
+# Maintained by mjojo (https://github.com/mjojo/AuraClean)
+
+schema_version = 1
+category = "browsers"
+
+[[rule]]
+id = "chrome_web_cache"
+category = "browsers"
+safety_level = "Green"
+quarantine_tier = "ManifestOnly"
+detect_processes = ["chrome.exe"]
+min_age_hours = 2
+paths = [
+    "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Cache\\Cache_Data\\*",
+    "%LOCALAPPDATA%\\Google\\Chrome\\User Data\\*\\Code Cache\\*"
+]
+exclude_patterns = ["*.lock", "index"]
+
+[rule.i18n.en]
+name = "Google Chrome — Web & Code Cache"
+description = "Temporary copies of website images and compiled scripts. Saved passwords, cookies, and active logins are never touched."
+
+[rule.i18n.ru]
+name = "Google Chrome — Кэш веб-страниц и скриптов"
+description = "Временные копии картинок и скриптов с сайтов. Пароли, куки и активные сессии не затрагиваются."
+
+[[rule]]
+id = "edge_web_cache"
+category = "browsers"
+safety_level = "Green"
+quarantine_tier = "ManifestOnly"
+detect_processes = ["msedge.exe"]
+min_age_hours = 2
+paths = [
+    "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Cache\\Cache_Data\\*",
+    "%LOCALAPPDATA%\\Microsoft\\Edge\\User Data\\*\\Code Cache\\*"
+]
+exclude_patterns = ["*.lock", "index"]
+
+[rule.i18n.en]
+name = "Microsoft Edge — Web & Code Cache"
+description = "Temporary browser cache files across all Edge profiles. Logins and history remain intact."
+
+[rule.i18n.ru]
+name = "Microsoft Edge — Кэш веб-страниц и скриптов"
+description = "Временные файлы кэша во всех профилях Edge. Авторизация и история браузера сохраняются."

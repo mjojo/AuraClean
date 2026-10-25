@@ -1,0 +1,43 @@
+# AuraClean Declarative Cleaning Rules — Windows System Maintenance
+# Maintained by mjojo (https://github.com/mjojo/AuraClean)
+
+schema_version = 1
+category = "system_windows"
+
+[[rule]]
+id = "windows_user_temp"
+category = "system_windows"
+safety_level = "Green"
+quarantine_tier = "ArchiveToVault"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\Temp\\*"
+]
+exclude_patterns = ["*.lock", "*.vhdx", "aria-debug*"]
+
+[rule.i18n.en]
+name = "Windows User Temporary Files"
+description = "Stale temporary installer caches and scratch files older than 24 hours. Active files are automatically skipped."
+
+[rule.i18n.ru]
+name = "Временные файлы пользователя (%TEMP%)"
+description = "Устаревшие временные файлы программ и установщиков старше 24 часов. Активные файлы автоматически пропускаются."
+
+[[rule]]
+id = "windows_crash_dumps"
+category = "system_windows"
+safety_level = "Green"
+quarantine_tier = "ArchiveToVault"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\CrashDumps\\*.dmp"
+]
+exclude_patterns = []
+
+[rule.i18n.en]
+name = "Application Crash Dumps (WER)"
+description = "Diagnostic memory dumps created when user applications crash. Safe to remove once no longer needed for debugging."
+
+[rule.i18n.ru]
+name = "Дампы падений приложений (CrashDumps)"
+description = "Диагностические снимки памяти при сбоях программ. Полностью безопасны для удаления."

@@ -1,0 +1,44 @@
+# AuraClean Declarative Cleaning Rules — Gaming & Shader Pipelines
+# Maintained by mjojo (https://github.com/mjojo/AuraClean)
+
+schema_version = 1
+category = "gaming"
+
+[[rule]]
+id = "nvidia_dx_cache"
+category = "gaming"
+safety_level = "Yellow"
+quarantine_tier = "ManifestOnly"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\NVIDIA\\DXCache\\*",
+    "%LOCALAPPDATA%\\NVIDIA\\GLCache\\*"
+]
+exclude_patterns = ["*.lock"]
+
+[rule.i18n.en]
+name = "NVIDIA DirectX & OpenGL Shader Cache"
+description = "Compiled GPU shaders. Safe to purge to reclaim gigabytes or fix stuttering, though games may briefly recompile shaders on next launch."
+
+[rule.i18n.ru]
+name = "NVIDIA — Кэш шейдеров DirectX и OpenGL"
+description = "Скомпилированные шейдеры видеокарты. Очистка освобождает гигабайты места, но при первом запуске игры возможна краткая перекомпиляция."
+
+[[rule]]
+id = "directx_d3dscache"
+category = "gaming"
+safety_level = "Yellow"
+quarantine_tier = "ManifestOnly"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\D3DSCache\\*"
+]
+exclude_patterns = []
+
+[rule.i18n.en]
+name = "Windows Direct3D Shader Cache"
+description = "DirectX 12 shader pipeline cache stored in LocalAppData."
+
+[rule.i18n.ru]
+name = "Кэш шейдеров Windows Direct3D (D3DSCache)"
+description = "Кэш конвейера шейдеров DirectX 12 в папке пользователя."

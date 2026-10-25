@@ -1,17 +1,25 @@
-*.FASL
-*.fasl
-*.lisp-temp
-*.dfsl
-*.pfsl
-*.d64fsl
-*.p64fsl
-*.lx64fsl
-*.lx32fsl
-*.dx64fsl
-*.dx32fsl
-*.fx64fsl
-*.fx32fsl
-*.sx64fsl
-*.sx32fsl
-*.wx64fsl
-*.wx32fsl
+# Rust / Cargo
+/target/
+**/*.rs.bk
+*.pdb
+
+# Node / Tauri Frontend
+node_modules/
+dist/
+.vite/
+
+# Local Vault / Temp test artifacts
+*.tar.zst
+*.db
+*.db-shm
+*.db-wal
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+

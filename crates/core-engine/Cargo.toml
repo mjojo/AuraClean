@@ -1,0 +1,21 @@
+[package]
+name = "core-engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+ipc-protocol = { path = "../ipc-protocol" }
+safety-guard = { path = "../safety-guard" }
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+uuid.workspace = true
+walkdir.workspace = true
+jwalk.workspace = true
+rayon.workspace = true
+winreg.workspace = true
+windows.workspace = true
+tracing.workspace = true

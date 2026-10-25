@@ -1,0 +1,455 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+//! AuraClean Native 1-Click Desktop Application (`AuraClean.exe`).
+//!
+//! Launches a Windows 11 Mica/Dark Cyber-Fluent UI powered by the native OS Edge WebView2
+//! engine, connected to the AuraClean `core-engine` and `safety-guard` Time-Capsule Vault.
+//!
+//! Architected and maintained by mjojo (https://github.com/mjojo/AuraClean).
+
+use anyhow::Result;
+use base64::Engine;
+use core_engine::{
+    CleaningRule, RegistryFinding, load_rules_from_dir, resolve_base_directories,
+    scan_directory_with_rule, scan_safe_registry_zones,
+};
+use ipc_protocol::{Locale, ScannedItem, VaultTransactionSummary};
+use safety_guard::{QuarantineCandidate, RegistrySnapshotEntry, TimeCapsuleVault, VaultConfig};
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+use tao::{
+    dpi::LogicalSize,
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy},
+    window::WindowBuilder,
+};
+use uuid::Uuid;
+use wry::WebViewBuilder;
+
+const EMBEDDED_HTML: &str = include_str!("../ui/index.html");
+const EMBEDDED_LOGO_PNG: &[u8] = include_bytes!("../../../assets/brand/mjojo-logo-128.png");
+const EMBEDDED_MASCOT_PNG: &[u8] = include_bytes!("../../../assets/brand/mjojo-mascot-128.png");
+
+#[derive(Debug, Clone)]
+enum UserEvent {
+    BackendUpdated {
+        state_json: String,
+        toast: Option<String>,
+    },
+}
+
+#[derive(Debug, Deserialize)]
+struct UiIpcMessage {
+    cmd: String,
+    #[serde(default)]
+    lang: String,
+    #[serde(default)]
+    tx_id: Option<String>,
+    #[serde(default)]
+    approved_rule_ids: Vec<String>,
+    #[serde(default)]
+    include_registry: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct RuleUiView {
+    id: String,
+    category: String,
+    safety_level: String,
+    quarantine_tier: String,
+    name_en: String,
+    desc_en: String,
+    name_ru: String,
+    desc_ru: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scanned_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scanned_bytes: Option<u64>,
+    #[serde(default)]
+    sample_paths: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ScanUiSummary {
+    total_items: usize,
+    total_bytes: u64,
+    total_shielded: usize,
+    registry_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct FrontendState {
+    logo_data_uri: String,
+    mascot_data_uri: String,
+    rules: Vec<RuleUiView>,
+    registry_findings: Vec<RegistryFinding>,
+    scan_results: Option<ScanUiSummary>,
+    transactions: Vec<VaultTransactionSummary>,
+    vault_bytes: u64,
+}
+
+struct SharedAppState {
+    rules: Vec<CleaningRule>,
+    last_scanned_items: Vec<ScannedItem>,
+    last_registry_findings: Vec<RegistryFinding>,
+    frontend_state: FrontendState,
+    vault_dir: PathBuf,
+}
+
+fn default_vault_dir() -> PathBuf {
+    std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("AuraClean")
+        .join("Vault")
+}
+
+fn build_rule_views(rules: &[CleaningRule]) -> Vec<RuleUiView> {
+    rules
+        .iter()
+        .map(|r| {
+            let en = r.localized(Locale::En);
+            let ru = r.localized(Locale::Ru);
+            RuleUiView {
+                id: r.id.clone(),
+                category: r.category.clone(),
+                safety_level: format!("{:?}", r.safety_level),
+                quarantine_tier: format!("{:?}", r.quarantine_tier),
+                name_en: en.name,
+                desc_en: en.description,
+                name_ru: ru.name,
+                desc_ru: ru.description,
+                scanned_count: None,
+                scanned_bytes: None,
+                sample_paths: Vec::new(),
+            }
+        })
+        .collect()
+}
+
+fn main() -> Result<()> {
+    let vault_dir = default_vault_dir();
+    let rules = load_rules_from_dir(std::path::Path::new("rules"))?;
+    let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))?;
+
+    let logo_b64 = base64::engine::general_purpose::STANDARD.encode(EMBEDDED_LOGO_PNG);
+    let mascot_b64 = base64::engine::general_purpose::STANDARD.encode(EMBEDDED_MASCOT_PNG);
+
+    let initial_frontend = FrontendState {
+        logo_data_uri: format!("data:image/png;base64,{logo_b64}"),
+        mascot_data_uri: format!("data:image/png;base64,{mascot_b64}"),
+        rules: build_rule_views(&rules),
+        registry_findings: Vec::new(),
+        scan_results: None,
+        transactions: vault.list_transactions().unwrap_or_default(),
+        vault_bytes: vault.current_vault_footprint_bytes().unwrap_or(0),
+    };
+
+    let init_script = format!(
+        "window.__AURACLEAN_INITIAL_STATE__ = {};",
+        serde_json::to_string(&initial_frontend)?
+    );
+
+    let shared = Arc::new(Mutex::new(SharedAppState {
+        rules,
+        last_scanned_items: Vec::new(),
+        last_registry_findings: Vec::new(),
+        frontend_state: initial_frontend,
+        vault_dir,
+    }));
+
+    let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+    let proxy: EventLoopProxy<UserEvent> = event_loop.create_proxy();
+
+    let window = WindowBuilder::new()
+        .with_title("AuraClean by mjojo — Hyper-Safe Windows Maintenance Suite")
+        .with_inner_size(LogicalSize::new(1120.0, 740.0))
+        .with_min_inner_size(LogicalSize::new(920.0, 620.0))
+        .build(&event_loop)?;
+
+    // Apply native Windows 11 Mica / Acrylic vibrancy when supported by the OS build
+    let _ = window_vibrancy::apply_mica(&window, Some(true))
+        .or_else(|_| window_vibrancy::apply_acrylic(&window, Some((11, 11, 20, 210))));
+
+    let shared_for_ipc = Arc::clone(&shared);
+    let proxy_for_ipc = proxy.clone();
+
+    let webview = WebViewBuilder::new()
+        .with_initialization_script(&init_script)
+        .with_html(EMBEDDED_HTML)
+        .with_ipc_handler(move |req| {
+            let body = req.body().to_string();
+            let shared_clone = Arc::clone(&shared_for_ipc);
+            let proxy_clone = proxy_for_ipc.clone();
+
+            std::thread::spawn(move || {
+                if let Ok(msg) = serde_json::from_str::<UiIpcMessage>(&body) {
+                    handle_ui_command(msg, &shared_clone, &proxy_clone);
+                }
+            });
+        })
+        .build(&window)?;
+
+    event_loop.run(move |event, _, control_flow| {
+        *control_flow = ControlFlow::Wait;
+
+        match event {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
+                *control_flow = ControlFlow::Exit;
+            }
+            Event::UserEvent(UserEvent::BackendUpdated { state_json, toast }) => {
+                let toast_arg = match toast {
+                    Some(t) => serde_json::to_string(&t).unwrap_or_else(|_| "null".to_string()),
+                    None => "null".to_string(),
+                };
+                let js = format!("window.__onBackendStateUpdate({state_json}, {toast_arg});");
+                let _ = webview.evaluate_script(&js);
+            }
+            _ => {}
+        }
+    });
+}
+
+fn handle_ui_command(
+    msg: UiIpcMessage,
+    shared: &Arc<Mutex<SharedAppState>>,
+    proxy: &EventLoopProxy<UserEvent>,
+) {
+    let locale = Locale::from_code(&msg.lang);
+
+    match msg.cmd.as_str() {
+        "scan" => {
+            let (rules, vault_dir) = {
+                let guard = shared.lock().unwrap();
+                (guard.rules.clone(), guard.vault_dir.clone())
+            };
+
+            let mut all_items = Vec::new();
+            let mut total_bytes = 0u64;
+            let mut total_shielded = 0usize;
+            let mut updated_views = build_rule_views(&rules);
+
+            for (idx, rule) in rules.iter().enumerate() {
+                let dirs = resolve_base_directories(rule);
+                let mut rule_count = 0usize;
+                let mut rule_bytes = 0u64;
+                let mut samples = Vec::new();
+
+                for dir in dirs {
+                    let rep = scan_directory_with_rule(&dir, rule, locale, 150);
+                    rule_count += rep.items.len();
+                    rule_bytes += rep.total_reclaimable_bytes();
+                    total_shielded += rep.skipped_locked
+                        + rep.skipped_cloud
+                        + rep.skipped_recent
+                        + rep.skipped_whitelisted;
+                    for item in &rep.items {
+                        if samples.len() < 3 {
+                            samples.push(item.path.to_string_lossy().to_string());
+                        }
+                    }
+                    all_items.extend(rep.items);
+                }
+
+                total_bytes += rule_bytes;
+                updated_views[idx].scanned_count = Some(rule_count);
+                updated_views[idx].scanned_bytes = Some(rule_bytes);
+                updated_views[idx].sample_paths = samples;
+            }
+
+            let reg_findings = scan_safe_registry_zones(50);
+
+            let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
+            let mut guard = shared.lock().unwrap();
+            guard.frontend_state.rules = updated_views;
+            guard.frontend_state.registry_findings = reg_findings.clone();
+            guard.frontend_state.scan_results = Some(ScanUiSummary {
+                total_items: all_items.len(),
+                total_bytes,
+                total_shielded,
+                registry_count: reg_findings.len(),
+            });
+            if let Some(v) = vault {
+                guard.frontend_state.transactions = v.list_transactions().unwrap_or_default();
+                guard.frontend_state.vault_bytes = v.current_vault_footprint_bytes().unwrap_or(0);
+            }
+            guard.last_scanned_items = all_items;
+            guard.last_registry_findings = reg_findings;
+
+            let toast = match locale {
+                Locale::En => format!(
+                    "Smart Scan finished: {} safe files & {} registry orphans found ({} shielded)",
+                    guard
+                        .frontend_state
+                        .scan_results
+                        .as_ref()
+                        .map(|s| s.total_items)
+                        .unwrap_or(0),
+                    guard.last_registry_findings.len(),
+                    total_shielded
+                ),
+                Locale::Ru => format!(
+                    "Анализ завершен: {} файлов и {} сирот реестра (защищено щитами: {})",
+                    guard
+                        .frontend_state
+                        .scan_results
+                        .as_ref()
+                        .map(|s| s.total_items)
+                        .unwrap_or(0),
+                    guard.last_registry_findings.len(),
+                    total_shielded
+                ),
+            };
+
+            if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                let _ = proxy.send_event(UserEvent::BackendUpdated {
+                    state_json,
+                    toast: Some(toast),
+                });
+            }
+        }
+        "confirm_quarantine" => {
+            if msg.approved_rule_ids.is_empty() && !msg.include_registry {
+                return;
+            }
+
+            let (candidates, reg_snapshots, vault_dir) = {
+                let guard = shared.lock().unwrap();
+                let cands: Vec<QuarantineCandidate> = guard
+                    .last_scanned_items
+                    .iter()
+                    .filter(|item| msg.approved_rule_ids.contains(&item.rule_id))
+                    .take(50)
+                    .map(|item| QuarantineCandidate {
+                        rule_id: item.rule_id.clone(),
+                        path: item.path.clone(),
+                        requested_tier: item.quarantine_tier,
+                    })
+                    .collect();
+
+                let regs: Vec<RegistrySnapshotEntry> = if msg.include_registry {
+                    guard
+                        .last_registry_findings
+                        .iter()
+                        .map(|rf| RegistrySnapshotEntry {
+                            root_hive: rf.root_hive.clone(),
+                            subkey_path: rf.subkey_path.clone(),
+                            value_name: Some(rf.value_name.clone()),
+                            value_type: "REG_SZ".to_string(),
+                            value_data: rf.raw_value_data.clone(),
+                            human_reason: rf.reason_en.clone(),
+                        })
+                        .collect()
+                } else {
+                    Vec::new()
+                };
+
+                (cands, regs, guard.vault_dir.clone())
+            };
+
+            if candidates.is_empty() && reg_snapshots.is_empty() {
+                return;
+            }
+
+            if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))
+                && let Ok(tx_summary) = vault.quarantine_batch(&candidates, &reg_snapshots)
+            {
+                let mut guard = shared.lock().unwrap();
+                guard
+                    .last_scanned_items
+                    .retain(|i| !msg.approved_rule_ids.contains(&i.rule_id));
+                if msg.include_registry {
+                    guard.last_registry_findings.clear();
+                    guard.frontend_state.registry_findings.clear();
+                }
+
+                let remaining_bytes: u64 =
+                    guard.last_scanned_items.iter().map(|i| i.size_bytes).sum();
+                let prev_shielded = guard
+                    .frontend_state
+                    .scan_results
+                    .as_ref()
+                    .map(|s| s.total_shielded)
+                    .unwrap_or(0);
+
+                for rv in &mut guard.frontend_state.rules {
+                    if msg.approved_rule_ids.contains(&rv.id) {
+                        rv.scanned_count = Some(0);
+                        rv.scanned_bytes = Some(0);
+                        rv.sample_paths.clear();
+                    }
+                }
+
+                guard.frontend_state.scan_results = Some(ScanUiSummary {
+                    total_items: guard.last_scanned_items.len(),
+                    total_bytes: remaining_bytes,
+                    total_shielded: prev_shielded,
+                    registry_count: guard.last_registry_findings.len(),
+                });
+                guard.frontend_state.transactions = vault.list_transactions().unwrap_or_default();
+                guard.frontend_state.vault_bytes =
+                    vault.current_vault_footprint_bytes().unwrap_or(0);
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Permission verified: Transaction {} saved to Time-Capsule Vault",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                    Locale::Ru => format!(
+                        "Разрешение подтверждено: транзакция {} сохранена в Капсулу Времени",
+                        &tx_summary.transaction_id.to_string()[..8]
+                    ),
+                };
+
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        "restore_tx" => {
+            let Some(tx_id_str) = msg.tx_id else {
+                return;
+            };
+            let Ok(tx_uuid) = Uuid::parse_str(&tx_id_str) else {
+                return;
+            };
+
+            let vault_dir = { shared.lock().unwrap().vault_dir.clone() };
+            if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))
+                && let Ok((restored_count, _)) = vault.restore_transaction(tx_uuid)
+            {
+                let mut guard = shared.lock().unwrap();
+                guard.frontend_state.transactions = vault.list_transactions().unwrap_or_default();
+                guard.frontend_state.vault_bytes =
+                    vault.current_vault_footprint_bytes().unwrap_or(0);
+
+                let toast = match locale {
+                    Locale::En => format!(
+                        "Restored {restored_count} files from transaction {}",
+                        &tx_id_str[..8]
+                    ),
+                    Locale::Ru => format!(
+                        "Восстановлено {restored_count} файлов из транзакции {}",
+                        &tx_id_str[..8]
+                    ),
+                };
+
+                if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {
+                    let _ = proxy.send_event(UserEvent::BackendUpdated {
+                        state_json,
+                        toast: Some(toast),
+                    });
+                }
+            }
+        }
+        _ => {}
+    }
+}

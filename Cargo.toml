@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ipc-protocol",
+    "crates/safety-guard",
+    "crates/core-engine",
+    "crates/elevated-service",
+    "crates/auraclean-cli",
+    "crates/auraclean-gui",
+]
+default-members = ["crates/auraclean-gui"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["mjojo <https://github.com/mjojo>"]
+license = "MIT"
+repository = "https://github.com/mjojo/AuraClean"
+homepage = "https://github.com/mjojo/AuraClean"
+rust-version = "1.85"
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.11", features = ["v4", "serde"] }
+sha2 = "0.10"
+hex = "0.4"
+tar = "0.4"
+zstd = "0.13"
+rusqlite = { version = "0.32", features = ["bundled"] }
+rayon = "1.10"
+jwalk = "0.8"
+walkdir = "2.5"
+winreg = "0.52"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+clap = { version = "4.5", features = ["derive"] }
+tempfile = "3.14"
+tao = "0.30"
+wry = "0.47"
+window-vibrancy = "0.5"
+base64 = "0.22"
+winresource = "0.1"
+
+[workspace.dependencies.windows]
+version = "0.58"
+features = [
+    "Win32_Foundation",
+    "Win32_Storage_FileSystem",
+    "Win32_System_RestartManager",
+    "Win32_Security",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+]

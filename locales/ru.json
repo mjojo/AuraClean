@@ -1,0 +1,31 @@
+{
+  "app": {
+    "name": "AuraClean",
+    "vendor": "mjojo",
+    "tagline": "Сверхбезопасный комплекс профилактики и очистки Windows нового поколения на Rust"
+  },
+  "nav": {
+    "dashboard": "Пульс Системы",
+    "space_lens": "Рентген Диска (MFT)",
+    "profiles": "Умные Профили",
+    "startup": "Автозапуск и Старт",
+    "time_capsule": "Капсула Времени (Карантин)"
+  },
+  "safety": {
+    "green": "100% Безопасно (Зеленый)",
+    "yellow": "Ситуативно (Желтый)",
+    "red": "Защищено / Заблокировано (Красный)",
+    "cloud_skipped": "Облачный файл-пустышка (Пропущен — OneDrive/iCloud)",
+    "locked_skipped": "Используется процессом (Пропущен)",
+    "recent_skipped": "Моложе 24 часов (Защищен по возрасту)"
+  },
+  "cli": {
+    "header": "AuraClean v{version} от {vendor} — Ядро деликатной защиты Zero-Breakage",
+    "vault_status": "Статус хранилища Time-Capsule",
+    "active_transactions": "Доступных для отката транзакций: {count}",
+    "total_vault_size": "Размер сжатого карантина: {bytes} байт (Квота: {quota} байт)",
+    "scan_complete": "Сканирование завершено: доступно для очистки {eligible} элементов (защищено/пропущено: {skipped})",
+    "quarantine_success": "Транзакция {tx_id} сохранена в Time-Capsule (упаковано: {archived}, по манифесту: {manifest})",
+    "restore_success": "Транзакция {tx_id} успешно откатила {restored} элементов на прежние места"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "app": {
+    "name": "AuraClean",
+    "vendor": "mjojo",
+    "tagline": "Next-Generation, Hyper-Safe Windows Maintenance Suite Powered by Rust"
+  },
+  "nav": {
+    "dashboard": "System Pulse",
+    "space_lens": "Space Lens (MFT)",
+    "profiles": "Smart Profiles",
+    "startup": "Boot & Startup",
+    "time_capsule": "Time-Capsule Vault"
+  },
+  "safety": {
+    "green": "100% Safe (Green)",
+    "yellow": "Situational (Yellow)",
+    "red": "Protected / Blocked (Red)",
+    "cloud_skipped": "Cloud Placeholder (Skipped — OneDrive/iCloud)",
+    "locked_skipped": "Active / Locked by Process (Skipped)",
+    "recent_skipped": "Created < 24h ago (Protected by Age Guard)"
+  },
+  "cli": {
+    "header": "AuraClean v{version} by {vendor} — Zero-Breakage Safety Engine",
+    "vault_status": "Time-Capsule Vault Status",
+    "active_transactions": "Active Reversible Transactions: {count}",
+    "total_vault_size": "Compressed Vault Footprint: {bytes} bytes (Quota: {quota} bytes)",
+    "scan_complete": "Scan completed: {eligible} safe items found ({skipped} protected/skipped)",
+    "quarantine_success": "Transaction {tx_id} committed to Time-Capsule Vault ({archived} archived, {manifest} manifest-only)",
+    "restore_success": "Transaction {tx_id} restored {restored} items to their original locations"
+  }
+}

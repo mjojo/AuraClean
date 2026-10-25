@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Launch AuraClean (1-Click GUI)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\AuraClean.cmd",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build AuraClean Release (.exe)",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--release", "-p", "auraclean-gui"],
+      "group": "build",
+      "problemMatcher": ["$rustc"]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+[package]
+name = "safety-guard"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+ipc-protocol = { path = "../ipc-protocol" }
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+sha2.workspace = true
+hex.workspace = true
+tar.workspace = true
+zstd.workspace = true
+rusqlite.workspace = true
+tracing.workspace = true
+windows.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

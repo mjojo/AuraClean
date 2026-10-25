@@ -1,0 +1,16 @@
+[package]
+name = "auraclean-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+ipc-protocol = { path = "../ipc-protocol" }
+safety-guard = { path = "../safety-guard" }
+core-engine = { path = "../core-engine" }
+anyhow.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true

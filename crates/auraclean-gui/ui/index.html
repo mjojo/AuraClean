@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuraClean by mjojo</title>
+  <style>
+    :root {
+      --bg-void: #0B0B14;
+      --bg-surface: rgba(19, 20, 34, 0.88);
+      --bg-surface-hover: rgba(30, 32, 54, 0.94);
+      --border-glass: rgba(168, 85, 247, 0.22);
+      --brand-purple: #A855F7;
+      --brand-purple-deep: #9333EA;
+      --brand-green: #4ADE80;
+      --brand-green-deep: #22C55E;
+      --amber: #F59E0B;
+      --red: #EF4444;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --font-sans: 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at 75% 15%, rgba(168, 85, 247, 0.14), transparent 45%),
+                  radial-gradient(circle at 25% 85%, rgba(74, 222, 128, 0.09), transparent 45%),
+                  var(--bg-void);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: rgba(11, 11, 20, 0.92);
+      border-right: 1px solid var(--border-glass);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      gap: 20px;
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.16), rgba(74, 222, 128, 0.07));
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      border-radius: 14px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.45);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      background: linear-gradient(90deg, #FFFFFF, #D8B4FE, #4ADE80);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--brand-green);
+      font-family: var(--font-mono);
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: left;
+    }
+
+    .nav-btn:hover {
+      background: rgba(168, 85, 247, 0.1);
+      color: var(--text-primary);
+    }
+
+    .nav-btn.active {
+      background: linear-gradient(90deg, rgba(168, 85, 247, 0.24), rgba(168, 85, 247, 0.06));
+      border-color: rgba(168, 85, 247, 0.45);
+      color: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(147, 51, 234, 0.2);
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+      padding-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .lang-switch {
+      display: flex;
+      background: rgba(19, 20, 34, 0.9);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .lang-btn {
+      flex: 1;
+      padding: 7px 0;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .lang-btn.active {
+      background: var(--brand-purple-deep);
+      color: #FFFFFF;
+    }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 28px;
+      overflow-y: auto;
+      gap: 20px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .safety-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: rgba(74, 222, 128, 0.12);
+      border: 1px solid rgba(74, 222, 128, 0.4);
+      color: var(--brand-green);
+    }
+
+    /* Hero Pulse Core */
+    .hero-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      border-radius: 18px;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .pulse-left {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .neural-orb {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.35), rgba(11, 11, 20, 0.95));
+      border: 2px solid var(--brand-purple);
+      box-shadow: 0 0 28px rgba(168, 85, 247, 0.45), inset 0 0 18px rgba(74, 222, 128, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: transform 0.4s ease;
+    }
+
+    .neural-orb.scanning {
+      animation: pulseSpin 1.1s linear infinite;
+    }
+
+    @keyframes pulseSpin {
+      0% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.7), inset 0 0 18px rgba(74, 222, 128, 0.6); transform: scale(1.03); }
+      50% { box-shadow: 0 0 42px rgba(74, 222, 128, 0.8), inset 0 0 25px rgba(168, 85, 247, 0.8); transform: scale(0.97); }
+      100% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.7), inset 0 0 18px rgba(74, 222, 128, 0.6); transform: scale(1.03); }
+    }
+
+    .neural-orb img {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn-primary {
+      padding: 13px 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.5);
+      background: linear-gradient(135deg, var(--brand-purple-deep), #6D28D9);
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(147, 51, 234, 0.4);
+      transition: all 0.18s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 26px rgba(168, 85, 247, 0.6);
+    }
+
+    .btn-secondary {
+      padding: 13px 20px;
+      border-radius: 12px;
+      border: 1px solid rgba(74, 222, 128, 0.45);
+      background: rgba(34, 197, 94, 0.16);
+      color: var(--brand-green);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(34, 197, 94, 0.28);
+    }
+
+    /* Bento Grid */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .bento-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bento-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .bento-val {
+      font-size: 22px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: #FFFFFF;
+    }
+
+    .bento-sub {
+      font-size: 11px;
+      color: var(--brand-green);
+    }
+
+    /* Rules & Findings Table */
+    .panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-glass);
+      border-radius: 16px;
+      padding: 18px 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 240px;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .list-container {
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .rule-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 11px;
+      background: rgba(11, 11, 20, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      gap: 14px;
+    }
+
+    .rule-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .rule-name {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rule-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .badge-Green {
+      background: rgba(74, 222, 128, 0.16);
+      color: var(--brand-green);
+      border: 1px solid rgba(74, 222, 128, 0.4);
+    }
+
+    .badge-Yellow {
+      background: rgba(245, 158, 11, 0.16);
+      color: var(--amber);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .rule-metric {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: #E2E8F0;
+      white-space: nowrap;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      background: rgba(19, 20, 34, 0.96);
+      border: 1px solid var(--brand-green);
+      color: #FFFFFF;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      display: none;
+      z-index: 200;
+    }
+
+    /* Cleanup Permission Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 7, 13, 0.82);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 150;
+      padding: 24px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 720px;
+      max-height: 85vh;
+      background: #111322;
+      border: 1px solid rgba(168, 85, 247, 0.55);
+      border-radius: 18px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.75), 0 0 40px rgba(168, 85, 247, 0.25);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      background: linear-gradient(90deg, rgba(168, 85, 247, 0.16), rgba(74, 222, 128, 0.06));
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #FFFFFF;
+    }
+
+    .modal-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .modal-body {
+      padding: 18px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .perm-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 12px 14px;
+      border-radius: 11px;
+      background: rgba(11, 11, 20, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+    }
+
+    .perm-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .perm-check {
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      accent-color: var(--brand-purple);
+      cursor: pointer;
+    }
+
+    .sample-path {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #64748B;
+      margin-top: 4px;
+      word-break: break-all;
+    }
+
+    .modal-footer {
+      padding: 16px 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(11, 11, 20, 0.9);
+    }
+
+    .btn-cancel {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-cancel:hover {
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-box">
+      <img id="sidebar-logo" class="brand-logo" alt="mjojo" />
+      <div>
+        <div class="brand-title">AuraClean</div>
+        <div class="brand-sub">by mjojo • v0.1.0</div>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <button class="nav-btn active" onclick="switchTab('dashboard')" id="nav-dashboard">⚡ System Pulse</button>
+      <button class="nav-btn" onclick="switchTab('rules')" id="nav-rules">🛡 Safety Rules (TOML)</button>
+      <button class="nav-btn" onclick="switchTab('registry')" id="nav-registry">🧠 Registry Inspector</button>
+      <button class="nav-btn" onclick="switchTab('vault')" id="nav-vault">⏳ Time-Capsule Vault</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="lang-switch">
+        <button class="lang-btn active" id="lang-en" onclick="setLanguage('en')">EN</button>
+        <button class="lang-btn" id="lang-ru" onclick="setLanguage('ru')">RU</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top-bar">
+      <div>
+        <h1 class="page-title" id="ui-title">System Pulse & Smart Care</h1>
+        <p class="page-subtitle" id="ui-subtitle">Zero-Breakage Transactional Engine • Compile-Time Immutable Whitelist Active</p>
+      </div>
+      <div class="safety-pill" id="ui-shield-pill">🛡 Zero-Breakage Shield: READY</div>
+    </header>
+
+    <section class="hero-card">
+      <div class="pulse-left">
+        <div class="neural-orb" id="neural-orb">
+          <img id="orb-mascot" alt="mjojo neural core" />
+        </div>
+        <div>
+          <h2 id="hero-status-title" style="font-size: 19px; font-weight: 800;">Neural Safety Core Ready</h2>
+          <p id="hero-status-desc" style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+            Inspects Restart Manager file locks, Cloud Placeholders (OneDrive), and 24-Hour Age Guards before touching any byte.
+          </p>
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn-primary" id="btn-scan" onclick="triggerScan()">🔍 Smart Scan</button>
+        <button class="btn-secondary" id="btn-clean" onclick="openPermissionModal()" style="display:none;">🛡 Review &amp; Approve Cleanup</button>
+      </div>
+    </section>
+
+    <section class="bento-grid">
+      <div class="bento-card">
+        <span class="bento-label" id="lbl-reclaimable">Safe to Reclaim</span>
+        <span class="bento-val" id="val-reclaimable">0 KB</span>
+        <span class="bento-sub" id="sub-reclaimable">0 verified files</span>
+      </div>
+      <div class="bento-card">
+        <span class="bento-label" id="lbl-shields">Shielded Active / Recent</span>
+        <span class="bento-val" id="val-shields">0</span>
+        <span class="bento-sub" id="sub-shields">Locked &lt;24h / Cloud protected</span>
+      </div>
+      <div class="bento-card">
+        <span class="bento-label" id="lbl-vault">Time-Capsule Vault</span>
+        <span class="bento-val" id="val-vault">0 KB</span>
+        <span class="bento-sub" id="sub-vault">0 reversible snapshots</span>
+      </div>
+      <div class="bento-card">
+        <span class="bento-label" id="lbl-rules">Loaded TOML Rules</span>
+        <span class="bento-val" id="val-rules">8</span>
+        <span class="bento-sub" id="sub-rules">Signed &amp; Sandboxed</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <span class="panel-title" id="panel-heading">Declarative Protection &amp; Cleaning Modules</span>
+      </div>
+      <div class="list-container" id="main-list"></div>
+    </section>
+  </main>
+
+  <!-- Explicit User Permission Modal before any Cleanup executes -->
+  <div class="modal-backdrop" id="permission-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modal-title">🛡 Cleanup Permission &amp; Safety Review</div>
+          <div class="modal-subtitle" id="modal-subtitle">
+            AuraClean never deletes files without your explicit permission. Select the categories to move into the reversible Time-Capsule Vault:
+          </div>
+        </div>
+      </div>
+      <div class="modal-body" id="modal-items-list"></div>
+      <div class="modal-footer">
+        <span class="rule-desc" id="modal-summary-note">All approved items are backed up to Time-Capsule (Zstd + SQLite).</span>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-cancel" id="btn-modal-cancel" onclick="closePermissionModal()">Cancel</button>
+          <button class="btn-primary" id="btn-modal-confirm" onclick="confirmApprovedQuarantine()">✅ Approve &amp; Move to Time-Capsule</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const I18N = {
+      en: {
+        nav_dashboard: "⚡ System Pulse",
+        nav_rules: "🛡 Safety Rules (TOML)",
+        nav_registry: "🧠 Registry Inspector",
+        nav_vault: "⏳ Time-Capsule Vault",
+        title: "System Pulse & Smart Care",
+        subtitle: "Zero-Breakage Transactional Engine • Compile-Time Immutable Whitelist Active",
+        shield_pill: "🛡 Zero-Breakage Shield: READY",
+        hero_ready_title: "Neural Safety Core Ready",
+        hero_ready_desc: "Inspects Restart Manager file locks, Cloud Placeholders (OneDrive), and 24-Hour Age Guards before touching any byte.",
+        btn_scan: "🔍 Smart Scan",
+        btn_clean: "🛡 Review & Approve Cleanup",
+        lbl_reclaimable: "Safe to Reclaim",
+        lbl_shields: "Shielded Files",
+        lbl_vault: "Time-Capsule Vault",
+        lbl_rules: "Loaded TOML Rules",
+        panel_rules: "Declarative Protection & Cleaning Modules",
+        panel_registry: "Human-Readable Registry Inspector (Removable-Drive Aware)",
+        panel_vault: "Time-Capsule Reversible Transactions (Zstandard + SQLite)",
+        restore_btn: "↩ Rollback 1-Click",
+        restored_badge: "Restored",
+        empty_vault: "No quarantine snapshots yet. Run a Smart Scan to inspect your system.",
+        empty_registry: "No orphaned registry references detected (or run Smart Scan first).",
+        modal_title: "🛡 Cleanup Permission & Safety Authorization",
+        modal_subtitle: "AuraClean never cleans without your explicit permission. Uncheck any category you wish to keep:",
+        modal_note: "🟢 Green items are checked by default. 🟡 Yellow (shader/dev caches) are unchecked by default.",
+        modal_cancel: "Cancel",
+        modal_confirm: "✅ Authorize & Move to Time-Capsule",
+        reg_checkbox_title: "Orphaned Registry Keys (.reg + JSON Snapshot)"
+      },
+      ru: {
+        nav_dashboard: "⚡ Пульс Системы",
+        nav_rules: "🛡 Правила Защиты (TOML)",
+        nav_registry: "🧠 Инспектор Реестра",
+        nav_vault: "⏳ Капсула Времени",
+        title: "Пульс Системы и Деликатная Очистка",
+        subtitle: "Транзакционное ядро Zero-Breakage • Непробиваемый Белый Список активен",
+        shield_pill: "🛡 Щит Безопасности: АКТИВЕН",
+        hero_ready_title: "Нейро-Ядро Безопасности mjojo Готово",
+        hero_ready_desc: "Проверяет блокировки Restart Manager, облачные файлы OneDrive и 24-часовой порог свежести перед любой операцией.",
+        btn_scan: "🔍 Умный Анализ",
+        btn_clean: "🛡 Проверить и Разрешить Очистку",
+        lbl_reclaimable: "Доступно к очистке",
+        lbl_shields: "Защищено щитами",
+        lbl_vault: "Архив Time-Capsule",
+        lbl_rules: "База TOML-правил",
+        panel_rules: "Декларативные модули деликатной очистки",
+        panel_registry: "Человекочитаемый Инспектор Реестра (С защитой съемных дисков)",
+        panel_vault: "Обратимые транзакции Time-Capsule (Zstandard + SQLite)",
+        restore_btn: "↩ Откатить в 1 клик",
+        restored_badge: "Восстановлено",
+        empty_vault: "В карантине пока нет транзакций. Запустите Умный Анализ для проверки ПК.",
+        empty_registry: "Битых ссылок реестра не обнаружено (или сначала запустите Умный Анализ).",
+        modal_title: "🛡 Запрос Разрешения на Деликатную Очистку",
+        modal_subtitle: "AuraClean ничего не трогает без вашего явного согласия. Отметьте категории для переноса в Капсулу Времени:",
+        modal_note: "🟢 Безопасные категории отмечены по умолчанию. 🟡 Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
+        modal_cancel: "Отмена",
+        modal_confirm: "✅ Разрешить и Поместить в Карантин",
+        reg_checkbox_title: "Осиротевшие ключи реестра (Снимок .reg + JSON)"
+      }
+    };
+
+    let currentLang = 'en';
+    let currentTab = 'dashboard';
+    let appState = window.__AURACLEAN_INITIAL_STATE__ || {
+      mascotDataUri: "",
+      logoDataUri: "",
+      rules: [],
+      scanResults: null,
+      transactions: [],
+      vaultBytes: 0
+    };
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return "0 KB";
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    }
+
+    function sendIpc(cmd, payload = {}) {
+      if (window.ipc && window.ipc.postMessage) {
+        window.ipc.postMessage(JSON.stringify({ cmd, lang: currentLang, ...payload }));
+      }
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+      document.getElementById('lang-ru').classList.toggle('active', lang === 'ru');
+      sendIpc('set_lang', { lang });
+      renderUI();
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.getElementById('nav-dashboard').classList.toggle('active', tab === 'dashboard');
+      document.getElementById('nav-rules').classList.toggle('active', tab === 'rules');
+      document.getElementById('nav-registry').classList.toggle('active', tab === 'registry');
+      document.getElementById('nav-vault').classList.toggle('active', tab === 'vault');
+      renderUI();
+    }
+
+    function triggerScan() {
+      const orb = document.getElementById('neural-orb');
+      orb.classList.add('scanning');
+      sendIpc('scan');
+    }
+
+    function openPermissionModal() {
+      const t = I18N[currentLang];
+      document.getElementById('modal-title').textContent = t.modal_title;
+      document.getElementById('modal-subtitle').textContent = t.modal_subtitle;
+      document.getElementById('modal-summary-note').textContent = t.modal_note;
+      document.getElementById('btn-modal-cancel').textContent = t.modal_cancel;
+      document.getElementById('btn-modal-confirm').textContent = t.modal_confirm;
+
+      const container = document.getElementById('modal-items-list');
+      container.innerHTML = '';
+
+      const rules = (appState.rules || []).filter(r => (r.scanned_count || 0) > 0);
+      rules.forEach(r => {
+        const title = currentLang === 'ru' ? r.name_ru : r.name_en;
+        const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
+        const defaultChecked = r.safety_level === 'Green' ? 'checked' : '';
+        const samplesHtml = (r.sample_paths || [])
+          .map(p => `<div class="sample-path">• ${p}</div>`)
+          .join('');
+
+        const label = document.createElement('label');
+        label.className = 'perm-item';
+        label.innerHTML = `
+          <div class="perm-left">
+            <input type="checkbox" class="perm-check rule-perm-checkbox" value="${r.id}" ${defaultChecked} />
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-${r.safety_level}">${r.safety_level}</span>
+                <span>${title}</span>
+                <span class="badge badge-Green" style="opacity:0.85;">${r.quarantine_tier}</span>
+              </div>
+              <div class="rule-desc">${desc}</div>
+              ${samplesHtml}
+            </div>
+          </div>
+          <div class="rule-metric">${r.scanned_count} files (${formatBytes(r.scanned_bytes)})</div>
+        `;
+        container.appendChild(label);
+      });
+
+      const regFindings = appState.registryFindings || [];
+      if (regFindings.length > 0) {
+        const label = document.createElement('label');
+        label.className = 'perm-item';
+        label.innerHTML = `
+          <div class="perm-left">
+            <input type="checkbox" class="perm-check" id="perm-include-registry" checked />
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Green">Green</span>
+                <span>${t.reg_checkbox_title}</span>
+              </div>
+              <div class="rule-desc">${regFindings[0] ? (currentLang === 'ru' ? regFindings[0].reasonRu : regFindings[0].reasonEn) : ''}</div>
+            </div>
+          </div>
+          <div class="rule-metric">${regFindings.length} keys</div>
+        `;
+        container.appendChild(label);
+      }
+
+      document.getElementById('permission-modal').classList.add('open');
+    }
+
+    function closePermissionModal() {
+      document.getElementById('permission-modal').classList.remove('open');
+    }
+
+    function confirmApprovedQuarantine() {
+      const checkedRules = Array.from(document.querySelectorAll('.rule-perm-checkbox:checked'))
+        .map(cb => cb.value);
+      const regCheckbox = document.getElementById('perm-include-registry');
+      const includeRegistry = regCheckbox ? regCheckbox.checked : false;
+
+      closePermissionModal();
+      if (checkedRules.length === 0 && !includeRegistry) {
+        return;
+      }
+
+      sendIpc('confirm_quarantine', {
+        approved_rule_ids: checkedRules,
+        include_registry: includeRegistry
+      });
+    }
+
+    function triggerRestore(txId) {
+      sendIpc('restore_tx', { tx_id: txId });
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    window.__onBackendStateUpdate = function(newState, toastMsg) {
+      const orb = document.getElementById('neural-orb');
+      orb.classList.remove('scanning');
+      appState = { ...appState, ...newState };
+      renderUI();
+      if (toastMsg) showToast(toastMsg);
+    };
+
+    function renderUI() {
+      const t = I18N[currentLang];
+      if (appState.logoDataUri) document.getElementById('sidebar-logo').src = appState.logoDataUri;
+      if (appState.mascotDataUri) document.getElementById('orb-mascot').src = appState.mascotDataUri;
+
+      document.getElementById('nav-dashboard').textContent = t.nav_dashboard;
+      document.getElementById('nav-rules').textContent = t.nav_rules;
+      document.getElementById('nav-registry').textContent = t.nav_registry;
+      document.getElementById('nav-vault').textContent = t.nav_vault;
+      document.getElementById('ui-title').textContent = t.title;
+      document.getElementById('ui-subtitle').textContent = t.subtitle;
+      document.getElementById('ui-shield-pill').textContent = t.shield_pill;
+      document.getElementById('hero-status-title').textContent = t.hero_ready_title;
+      document.getElementById('hero-status-desc').textContent = t.hero_ready_desc;
+      document.getElementById('btn-scan').textContent = t.btn_scan;
+      document.getElementById('btn-clean').textContent = t.btn_clean;
+      document.getElementById('lbl-reclaimable').textContent = t.lbl_reclaimable;
+      document.getElementById('lbl-shields').textContent = t.lbl_shields;
+      document.getElementById('lbl-vault').textContent = t.lbl_vault;
+      document.getElementById('lbl-rules').textContent = t.lbl_rules;
+
+      const rules = appState.rules || [];
+      document.getElementById('val-rules').textContent = rules.length;
+      document.getElementById('val-vault').textContent = formatBytes(appState.vaultBytes || 0);
+      const activeTxCount = (appState.transactions || []).filter(tx => !tx.restored).length;
+      document.getElementById('sub-vault').textContent = `${activeTxCount} active snapshots`;
+
+      if (appState.scanResults) {
+        const sr = appState.scanResults;
+        document.getElementById('val-reclaimable').textContent = formatBytes(sr.totalBytes);
+        document.getElementById('sub-reclaimable').textContent = `${sr.totalItems} files | ${sr.registryCount || 0} reg keys`;
+        document.getElementById('val-shields').textContent = sr.totalShielded;
+        const hasActionable = sr.totalItems > 0 || (sr.registryCount || 0) > 0;
+        document.getElementById('btn-clean').style.display = hasActionable ? 'inline-block' : 'none';
+      }
+
+      const listEl = document.getElementById('main-list');
+      listEl.innerHTML = '';
+
+      if (currentTab === 'registry') {
+        document.getElementById('panel-heading').textContent = t.panel_registry;
+        const regs = appState.registryFindings || [];
+        if (regs.length === 0) {
+          listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_registry}</span></div>`;
+          return;
+        }
+        regs.forEach(rf => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const title = currentLang === 'ru' ? rf.titleRu : rf.titleEn;
+          const reason = currentLang === 'ru' ? rf.reasonRu : rf.reasonEn;
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-${rf.safetyLevel}">${rf.safetyLevel}</span>
+                <span>${title}</span>
+              </div>
+              <div class="rule-desc">${reason}</div>
+              <div class="sample-path">${rf.rootHive}\\${rf.subkeyPath}</div>
+            </div>
+            <div class="rule-metric">${rf.zone}</div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
+
+      if (currentTab === 'vault') {
+        document.getElementById('panel-heading').textContent = t.panel_vault;
+        const txs = appState.transactions || [];
+        if (txs.length === 0) {
+          listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_vault}</span></div>`;
+          return;
+        }
+        txs.forEach(tx => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const actionHtml = tx.restored
+            ? `<span class="badge badge-Green">${t.restored_badge}</span>`
+            : `<button class="btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="triggerRestore('${tx.transaction_id}')">${t.restore_btn}</button>`;
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Green">${tx.transaction_id.slice(0, 8)}</span>
+                <span>${tx.created_at}</span>
+              </div>
+              <div class="rule-desc">Archived: ${tx.archived_files_count} files | Manifest: ${tx.manifest_only_count} | Original: ${formatBytes(tx.original_bytes_total)} -> Zstd: ${formatBytes(tx.compressed_vault_bytes)}</div>
+            </div>
+            <div>${actionHtml}</div>
+          `;
+          listEl.appendChild(row);
+        });
+      } else {
+        document.getElementById('panel-heading').textContent = t.panel_rules;
+        rules.forEach(r => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const title = currentLang === 'ru' ? r.name_ru : r.name_en;
+          const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
+          const metric = r.scanned_count !== undefined
+            ? `${r.scanned_count} files (${formatBytes(r.scanned_bytes)})`
+            : r.category;
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-${r.safety_level}">${r.safety_level}</span>
+                <span>${title}</span>
+              </div>
+              <div class="rule-desc">${desc}</div>
+            </div>
+            <div class="rule-metric">${metric}</div>
+          `;
+          listEl.appendChild(row);
+        });
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderUI();
+    });
+  </script>
+</body>
+</html>
