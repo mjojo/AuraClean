@@ -31,14 +31,36 @@ safety_level = "Yellow"
 quarantine_tier = "ManifestOnly"
 min_age_hours = 24
 paths = [
-    "%LOCALAPPDATA%\\D3DSCache\\*"
+    "%LOCALAPPDATA%\\D3DSCache\\*",
+    "%LOCALLOW%\\NVIDIA\\PerDriverVersion\\DXCache\\*"
 ]
 exclude_patterns = []
 
 [rule.i18n.en]
-name = "Windows Direct3D Shader Cache"
-description = "DirectX 12 shader pipeline cache stored in LocalAppData."
+name = "Windows Direct3D & LocalLow Shader Cache"
+description = "DirectX 12 shader pipeline cache stored in hidden LocalAppData and LocalLow folders."
 
 [rule.i18n.ru]
-name = "Кэш шейдеров Windows Direct3D (D3DSCache)"
-description = "Кэш конвейера шейдеров DirectX 12 в папке пользователя."
+name = "Кэш шейдеров Direct3D и скрытой папки AppData\\LocalLow"
+description = "Кэш конвейера шейдеров DirectX 12 в скрытых папках Local и LocalLow."
+
+[[rule]]
+id = "documents_game_crash_logs"
+category = "gaming"
+safety_level = "Green"
+quarantine_tier = "ArchiveToVault"
+min_age_hours = 24
+paths = [
+    "%DOCUMENTS%\\My Games\\*\\Logs\\*",
+    "%DOCUMENTS%\\My Games\\*\\CrashDumps\\*"
+]
+exclude_patterns = ["*.sav", "*.save", "*save*", "*.cfg", "*.ini"]
+
+[rule.i18n.en]
+name = "My Documents — Game Logs & Crash Dumps (SaveGames Shielded)"
+description = "Diagnostic game logs and crash dumps inside My Documents (including Cyrillic paths). SaveGames and configs are strictly excluded."
+
+[rule.i18n.ru]
+name = "Мои Документы — Логи и дампы игр (Сохранения защищены 🛡)"
+description = "Логи и дампы вылетов игр в папке «Мои документы» (с поддержкой кириллицы). Файлы сохранений (SaveGames) и настройки строго защищены."
+

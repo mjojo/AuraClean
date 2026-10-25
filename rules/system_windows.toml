@@ -41,3 +41,44 @@ description = "Diagnostic memory dumps created when user applications crash. Saf
 [rule.i18n.ru]
 name = "Дампы падений приложений (CrashDumps)"
 description = "Диагностические снимки памяти при сбоях программ. Полностью безопасны для удаления."
+
+[[rule]]
+id = "windows_wer_reports"
+category = "system_windows"
+safety_level = "Green"
+quarantine_tier = "ArchiveToVault"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportArchive\\*",
+    "%LOCALAPPDATA%\\Microsoft\\Windows\\WER\\ReportQueue\\*",
+    "%PROGRAMDATA%\\Microsoft\\Windows\\WER\\ReportArchive\\*"
+]
+exclude_patterns = []
+
+[rule.i18n.en]
+name = "Windows Error Reporting (Hidden AppData & ProgramData)"
+description = "Archived crash telemetry reports inside hidden AppData and ProgramData directories."
+
+[rule.i18n.ru]
+name = "Отчеты об ошибках Windows (Скрытые папки AppData и ProgramData)"
+description = "Архивные отчеты о сбоях внутри скрытых системных папок AppData и ProgramData."
+
+[[rule]]
+id = "windows_explorer_thumbcache"
+category = "system_windows"
+safety_level = "Green"
+quarantine_tier = "ManifestOnly"
+min_age_hours = 24
+paths = [
+    "%LOCALAPPDATA%\\Microsoft\\Windows\\Explorer\\thumbcache_*.db"
+]
+exclude_patterns = []
+
+[rule.i18n.en]
+name = "Windows Explorer Thumbnail Cache (Hidden AppData)"
+description = "Cached image thumbnails in hidden LocalAppData. Locked databases in use by Explorer are safely skipped."
+
+[rule.i18n.ru]
+name = "Кэш эскизов Проводника (Скрытая папка AppData)"
+description = "Кэшированные миниатюры файлов в скрытой папке LocalAppData. Активные файлы Проводника пропускаются."
+

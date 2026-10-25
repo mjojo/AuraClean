@@ -19,3 +19,6 @@ rayon.workspace = true
 winreg.workspace = true
 windows.workspace = true
 tracing.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

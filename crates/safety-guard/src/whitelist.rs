@@ -50,7 +50,8 @@ impl WhitelistVerdict {
     }
 }
 
-/// Normalizes a Windows path for case-insensitive comparison, stripping any `\\?\` extended prefix.
+/// Normalizes a Windows path for Unicode-aware (including Cyrillic) case-insensitive comparison,
+/// stripping any `\\?\` extended prefix.
 pub fn normalize_for_comparison(path: &Path) -> String {
     let raw = path.to_string_lossy();
     let stripped = raw
@@ -59,17 +60,19 @@ pub fn normalize_for_comparison(path: &Path) -> String {
         .or_else(|| raw.strip_prefix(r"\\?\").map(str::to_owned))
         .unwrap_or_else(|| raw.into_owned());
 
-    stripped.replace('/', r"\").to_ascii_lowercase()
+    stripped.replace('/', r"\").to_lowercase()
 }
 
 /// Converts a standard Windows path into an Extended-Length Path (`\\?\C:\...`) when needed
-/// to safely handle paths exceeding `MAX_PATH` (260 characters), such as deep `node_modules`.
+/// to safely handle paths exceeding `MAX_PATH` (260 characters) or deep Cyrillic folder hierarchies.
+/// Note: compares character count (`chars().count()`), not UTF-8 byte length, because Cyrillic
+/// characters occupy 2 bytes in UTF-8 but 1 `WCHAR` in Win32 UTF-16!
 pub fn to_extended_length_path(path: &Path) -> PathBuf {
     let raw = path.to_string_lossy();
     if raw.starts_with(r"\\?\") {
         return path.to_path_buf();
     }
-    if path.is_absolute() && raw.len() >= 240 {
+    if path.is_absolute() && raw.chars().count() >= 240 {
         if let Some(stripped_unc) = raw.strip_prefix(r"\\") {
             return PathBuf::from(format!(r"\\?\UNC\{stripped_unc}"));
         }
@@ -147,7 +150,7 @@ pub fn validate_rule_pattern_safety(pattern: &str) -> WhitelistVerdict {
         return WhitelistVerdict::BlockedUnsafeRulePattern("Empty rule pattern".to_string());
     }
 
-    let lower = trimmed.replace('/', r"\").to_ascii_lowercase();
+    let lower = trimmed.replace('/', r"\").to_lowercase();
     if lower.split('\\').any(|segment| segment == "..") {
         return WhitelistVerdict::BlockedUnsafeRulePattern(format!(
             "Path traversal '..' is prohibited in rule pattern: {pattern}"
@@ -161,6 +164,8 @@ pub fn validate_rule_pattern_safety(pattern: &str) -> WhitelistVerdict {
         r"%windir%\*",
         r"%userprofile%\*",
         r"%userprofile%\documents\*",
+        r"%userprofile%\мои документы\*",
+        r"%documents%\*",
         r"%userprofile%\desktop\*",
         r"%appdata%\*",
         r"%localappdata%\*",

@@ -9,8 +9,10 @@
 use anyhow::Result;
 use base64::Engine;
 use core_engine::{
-    CleaningRule, RegistryFinding, load_rules_from_dir, resolve_base_directories,
-    scan_directory_with_rule, scan_safe_registry_zones,
+    CleaningRule, DeepFolderInsight, RegistryFinding, SpaceLensFileEntry, StartupEntry,
+    load_rules_from_dir, resolve_base_directories, scan_directory_with_rule,
+    scan_hidden_appdata_and_documents, scan_safe_registry_zones, scan_space_lens_top_files,
+    scan_startup_entries,
 };
 use ipc_protocol::{Locale, ScannedItem, VaultTransactionSummary};
 use safety_guard::{QuarantineCandidate, RegistrySnapshotEntry, TimeCapsuleVault, VaultConfig};
@@ -85,6 +87,9 @@ struct FrontendState {
     mascot_data_uri: String,
     rules: Vec<RuleUiView>,
     registry_findings: Vec<RegistryFinding>,
+    deep_folders: Vec<DeepFolderInsight>,
+    space_lens_files: Vec<SpaceLensFileEntry>,
+    startup_entries: Vec<StartupEntry>,
     scan_results: Option<ScanUiSummary>,
     transactions: Vec<VaultTransactionSummary>,
     vault_bytes: u64,
@@ -142,6 +147,9 @@ fn main() -> Result<()> {
         mascot_data_uri: format!("data:image/png;base64,{mascot_b64}"),
         rules: build_rule_views(&rules),
         registry_findings: Vec::new(),
+        deep_folders: scan_hidden_appdata_and_documents(25),
+        space_lens_files: Vec::new(),
+        startup_entries: scan_startup_entries(),
         scan_results: None,
         transactions: vault.list_transactions().unwrap_or_default(),
         vault_bytes: vault.current_vault_footprint_bytes().unwrap_or(0),
@@ -263,11 +271,17 @@ fn handle_ui_command(
             }
 
             let reg_findings = scan_safe_registry_zones(50);
+            let deep_folders = scan_hidden_appdata_and_documents(30);
+            let space_lens_files = scan_space_lens_top_files(5 * 1024 * 1024, 25);
+            let startup_entries = scan_startup_entries();
 
             let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
             let mut guard = shared.lock().unwrap();
             guard.frontend_state.rules = updated_views;
             guard.frontend_state.registry_findings = reg_findings.clone();
+            guard.frontend_state.deep_folders = deep_folders;
+            guard.frontend_state.space_lens_files = space_lens_files;
+            guard.frontend_state.startup_entries = startup_entries;
             guard.frontend_state.scan_results = Some(ScanUiSummary {
                 total_items: all_items.len(),
                 total_bytes,

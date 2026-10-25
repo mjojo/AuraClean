@@ -2,8 +2,18 @@
 //!
 //! Designed and maintained by mjojo (https://github.com/mjojo/AuraClean).
 
+pub mod deep_scanners;
+pub mod known_folders;
 pub mod registry_inspector;
 
+pub use deep_scanners::{
+    DeepFolderInsight, SpaceLensFileEntry, StartupEntry, contains_cyrillic, looks_like_savegame,
+    scan_hidden_appdata_and_documents, scan_space_lens_top_files, scan_startup_entries,
+};
+pub use known_folders::{
+    expand_known_and_env_vars, expand_wildcard_directories, is_hidden_entry, query_known_folder,
+    resolve_user_appdata_roots, resolve_user_documents_dirs,
+};
 pub use registry_inspector::{
     RegistryFinding, RegistryZone, extract_executable_path_from_registry_string,
     is_on_mounted_fixed_drive, scan_safe_registry_zones, verify_orphaned_executable,
@@ -173,32 +183,10 @@ pub fn load_embedded_default_rules() -> Result<Vec<CleaningRule>> {
     Ok(rules)
 }
 
-/// Expands basic Windows environment variables (`%LOCALAPPDATA%`, `%APPDATA%`, `%TEMP%`, `%USERPROFILE%`)
-/// for safe local evaluation.
+/// Expands Windows environment variables AND Known Folder tokens (`%DOCUMENTS%`, `%LOCALAPPDATA%`,
+/// `%APPDATA%`, `%LOCALLOW%`, `%PROGRAMDATA%`, `%USERPROFILE%`, `%TEMP%`) with full Cyrillic & Unicode support.
 pub fn expand_windows_env_vars(pattern: &str) -> String {
-    let mut result = pattern.to_string();
-    for var in ["LOCALAPPDATA", "APPDATA", "TEMP", "TMP", "USERPROFILE"] {
-        let token = format!("%{var}%");
-        if result.to_ascii_uppercase().contains(&token)
-            && let Ok(val) = std::env::var(var)
-        {
-            result = replace_case_insensitive(&result, &token, &val);
-        }
-    }
-    result
-}
-
-fn replace_case_insensitive(haystack: &str, needle_upper: &str, replacement: &str) -> String {
-    let upper = haystack.to_ascii_uppercase();
-    if let Some(idx) = upper.find(needle_upper) {
-        let mut out = String::with_capacity(haystack.len() + replacement.len());
-        out.push_str(&haystack[..idx]);
-        out.push_str(replacement);
-        out.push_str(&haystack[idx + needle_upper.len()..]);
-        out
-    } else {
-        haystack.to_string()
-    }
+    expand_known_and_env_vars(pattern)
 }
 
 /// Scans a target directory under a specific `CleaningRule`, enforcing all 4 safety guards:
@@ -254,7 +242,7 @@ pub fn scan_directory_with_rule(
         }
 
         // 2. Immutable Whitelist Guard
-        if !evaluate_path_whitelist(&path).is_allowed() {
+        if !evaluate_path_whitelist(&path).is_allowed() || looks_like_savegame(&path) {
             summary.skipped_whitelisted += 1;
             continue;
         }
@@ -291,20 +279,13 @@ pub fn scan_directory_with_rule(
     summary
 }
 
-/// Resolves concrete base directories from a rule's path patterns for safe bounded scanning.
+/// Resolves concrete base directories from a rule's path patterns, expanding intermediate
+/// wildcards (`*`) inside hidden (`AppData`) and Cyrillic (`C:\Users\Вит\...`, `Мои документы`) paths.
 pub fn resolve_base_directories(rule: &CleaningRule) -> Vec<PathBuf> {
     let mut dirs = Vec::new();
     for pattern in &rule.paths {
-        let expanded = expand_windows_env_vars(pattern);
-        // Strip trailing wildcard segment (`\*` or `\*.dmp`) when wildcard is only at the leaf
-        let prefix = expanded
-            .split('*')
-            .next()
-            .unwrap_or(&expanded)
-            .trim_end_matches('\\');
-        if !prefix.is_empty() {
-            let candidate = PathBuf::from(prefix);
-            if candidate.exists() && candidate.is_dir() && !dirs.contains(&candidate) {
+        for candidate in expand_wildcard_directories(pattern) {
+            if !dirs.contains(&candidate) {
                 dirs.push(candidate);
             }
         }
@@ -367,6 +348,41 @@ mod tests {
             extract_executable_path_from_registry_string(r"rundll32.exe shell32.dll,Control_RunDLL")
                 .is_none()
         );
+    }
+
+    #[test]
+    fn test_cyrillic_and_hidden_folder_wildcard_resolution() {
+        let dir = tempfile::tempdir().unwrap();
+        let cyrillic_root = dir
+            .path()
+            .join("Пользователи")
+            .join("Вит")
+            .join("AppData")
+            .join("Local")
+            .join("TestBrowser")
+            .join("User Data");
+        let profile_1_cache = cyrillic_root.join("Profile 1").join("Cache");
+        let my_docs_logs = dir
+            .path()
+            .join("Мои документы")
+            .join("My Games")
+            .join("CyberGame")
+            .join("Logs");
+
+        std::fs::create_dir_all(&profile_1_cache).unwrap();
+        std::fs::create_dir_all(&my_docs_logs).unwrap();
+
+        let pattern_a = format!(r"{}\*\Cache\*", cyrillic_root.display());
+        let resolved_a = expand_wildcard_directories(&pattern_a);
+        assert_eq!(resolved_a, vec![profile_1_cache]);
+
+        let pattern_b = format!(
+            r"{}\*\Logs\*",
+            dir.path().join("Мои документы").join("My Games").display()
+        );
+        let resolved_b = expand_wildcard_directories(&pattern_b);
+        assert_eq!(resolved_b, vec![my_docs_logs]);
+        assert!(contains_cyrillic(&pattern_b));
     }
 }
 

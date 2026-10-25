@@ -396,6 +396,18 @@
       border: 1px solid rgba(245, 158, 11, 0.4);
     }
 
+    .badge-Red {
+      background: rgba(239, 68, 68, 0.16);
+      color: var(--red);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    .badge-Purple {
+      background: rgba(168, 85, 247, 0.18);
+      color: #D8B4FE;
+      border: 1px solid rgba(168, 85, 247, 0.45);
+    }
+
     .rule-metric {
       font-family: var(--font-mono);
       font-size: 13px;
@@ -552,8 +564,10 @@
 
     <nav class="nav-list">
       <button class="nav-btn active" onclick="switchTab('dashboard')" id="nav-dashboard">⚡ System Pulse</button>
-      <button class="nav-btn" onclick="switchTab('rules')" id="nav-rules">🛡 Safety Rules (TOML)</button>
+      <button class="nav-btn" onclick="switchTab('deep_folders')" id="nav-deep-folders">🕵️ Hidden AppData &amp; Docs</button>
+      <button class="nav-btn" onclick="switchTab('space_lens')" id="nav-space-lens">🪐 Space Lens</button>
       <button class="nav-btn" onclick="switchTab('registry')" id="nav-registry">🧠 Registry Inspector</button>
+      <button class="nav-btn" onclick="switchTab('startup')" id="nav-startup">⏱ Boot &amp; Startup</button>
       <button class="nav-btn" onclick="switchTab('vault')" id="nav-vault">⏳ Time-Capsule Vault</button>
     </nav>
 
@@ -651,27 +665,33 @@
     const I18N = {
       en: {
         nav_dashboard: "⚡ System Pulse",
-        nav_rules: "🛡 Safety Rules (TOML)",
+        nav_deep_folders: "🕵️ Hidden AppData & Docs",
+        nav_space_lens: "🪐 Space Lens",
         nav_registry: "🧠 Registry Inspector",
+        nav_startup: "⏱ Boot & Startup",
         nav_vault: "⏳ Time-Capsule Vault",
         title: "System Pulse & Smart Care",
-        subtitle: "Zero-Breakage Transactional Engine • Compile-Time Immutable Whitelist Active",
+        subtitle: "Zero-Breakage Transactional Engine • Full Hidden AppData & Cyrillic Path Support",
         shield_pill: "🛡 Zero-Breakage Shield: READY",
         hero_ready_title: "Neural Safety Core Ready",
-        hero_ready_desc: "Inspects Restart Manager file locks, Cloud Placeholders (OneDrive), and 24-Hour Age Guards before touching any byte.",
+        hero_ready_desc: "Scans hidden AppData (Local/LocalLow/Roaming) & My Documents (Cyrillic UTF-16 aware), shielding locked files & SaveGames.",
         btn_scan: "🔍 Smart Scan",
         btn_clean: "🛡 Review & Approve Cleanup",
         lbl_reclaimable: "Safe to Reclaim",
         lbl_shields: "Shielded Files",
         lbl_vault: "Time-Capsule Vault",
-        lbl_rules: "Loaded TOML Rules",
+        lbl_rules: "Active Rules",
         panel_rules: "Declarative Protection & Cleaning Modules",
+        panel_deep_folders: "Hidden AppData (Local/LocalLow/Roaming) & My Documents Inspector (Cyrillic Aware)",
+        panel_space_lens: "Space Lens — Top Heavy Files across Profile & Documents",
         panel_registry: "Human-Readable Registry Inspector (Removable-Drive Aware)",
+        panel_startup: "Boot & Startup Impact Profiler (HKCU / HKLM Run)",
         panel_vault: "Time-Capsule Reversible Transactions (Zstandard + SQLite)",
         restore_btn: "↩ Rollback 1-Click",
         restored_badge: "Restored",
         empty_vault: "No quarantine snapshots yet. Run a Smart Scan to inspect your system.",
         empty_registry: "No orphaned registry references detected (or run Smart Scan first).",
+        empty_space_lens: "Run Smart Scan to index top heavy files across your profile.",
         modal_title: "🛡 Cleanup Permission & Safety Authorization",
         modal_subtitle: "AuraClean never cleans without your explicit permission. Uncheck any category you wish to keep:",
         modal_note: "🟢 Green items are checked by default. 🟡 Yellow (shader/dev caches) are unchecked by default.",
@@ -681,14 +701,16 @@
       },
       ru: {
         nav_dashboard: "⚡ Пульс Системы",
-        nav_rules: "🛡 Правила Защиты (TOML)",
+        nav_deep_folders: "🕵️ Скрытые AppData и Документы",
+        nav_space_lens: "🪐 Рентген Диска",
         nav_registry: "🧠 Инспектор Реестра",
+        nav_startup: "⏱ Автозагрузка и Старт",
         nav_vault: "⏳ Капсула Времени",
         title: "Пульс Системы и Деликатная Очистка",
-        subtitle: "Транзакционное ядро Zero-Breakage • Непробиваемый Белый Список активен",
+        subtitle: "Транзакционное ядро Zero-Breakage • Поддержка скрытых папок AppData и путей с кириллицей",
         shield_pill: "🛡 Щит Безопасности: АКТИВЕН",
         hero_ready_title: "Нейро-Ядро Безопасности mjojo Готово",
-        hero_ready_desc: "Проверяет блокировки Restart Manager, облачные файлы OneDrive и 24-часовой порог свежести перед любой операцией.",
+        hero_ready_desc: "Сканирует скрытые папки AppData (Local/LocalLow/Roaming) и «Мои документы» (с пониманием кириллицы), защищая сохранения игр.",
         btn_scan: "🔍 Умный Анализ",
         btn_clean: "🛡 Проверить и Разрешить Очистку",
         lbl_reclaimable: "Доступно к очистке",
@@ -696,12 +718,16 @@
         lbl_vault: "Архив Time-Capsule",
         lbl_rules: "База TOML-правил",
         panel_rules: "Декларативные модули деликатной очистки",
+        panel_deep_folders: "Инспектор скрытых папок AppData и «Мои документы» (Поддержка Кириллицы)",
+        panel_space_lens: "Рентген Диска (Space Lens) — Самые тяжелые файлы профиля и документов",
         panel_registry: "Человекочитаемый Инспектор Реестра (С защитой съемных дисков)",
+        panel_startup: "Анализатор Автозагрузки и Времени Старта (HKCU / HKLM Run)",
         panel_vault: "Обратимые транзакции Time-Capsule (Zstandard + SQLite)",
         restore_btn: "↩ Откатить в 1 клик",
         restored_badge: "Восстановлено",
         empty_vault: "В карантине пока нет транзакций. Запустите Умный Анализ для проверки ПК.",
         empty_registry: "Битых ссылок реестра не обнаружено (или сначала запустите Умный Анализ).",
+        empty_space_lens: "Запустите Умный Анализ для построения карты самых крупных файлов.",
         modal_title: "🛡 Запрос Разрешения на Деликатную Очистку",
         modal_subtitle: "AuraClean ничего не трогает без вашего явного согласия. Отметьте категории для переноса в Капсулу Времени:",
         modal_note: "🟢 Безопасные категории отмечены по умолчанию. 🟡 Ситуативные (кэш шейдеров/сборок) требуют ручной галочки.",
@@ -747,8 +773,10 @@
     function switchTab(tab) {
       currentTab = tab;
       document.getElementById('nav-dashboard').classList.toggle('active', tab === 'dashboard');
-      document.getElementById('nav-rules').classList.toggle('active', tab === 'rules');
+      document.getElementById('nav-deep-folders').classList.toggle('active', tab === 'deep_folders');
+      document.getElementById('nav-space-lens').classList.toggle('active', tab === 'space_lens');
       document.getElementById('nav-registry').classList.toggle('active', tab === 'registry');
+      document.getElementById('nav-startup').classList.toggle('active', tab === 'startup');
       document.getElementById('nav-vault').classList.toggle('active', tab === 'vault');
       renderUI();
     }
@@ -868,8 +896,10 @@
       if (appState.mascotDataUri) document.getElementById('orb-mascot').src = appState.mascotDataUri;
 
       document.getElementById('nav-dashboard').textContent = t.nav_dashboard;
-      document.getElementById('nav-rules').textContent = t.nav_rules;
+      document.getElementById('nav-deep-folders').textContent = t.nav_deep_folders;
+      document.getElementById('nav-space-lens').textContent = t.nav_space_lens;
       document.getElementById('nav-registry').textContent = t.nav_registry;
+      document.getElementById('nav-startup').textContent = t.nav_startup;
       document.getElementById('nav-vault').textContent = t.nav_vault;
       document.getElementById('ui-title').textContent = t.title;
       document.getElementById('ui-subtitle').textContent = t.subtitle;
@@ -900,6 +930,83 @@
 
       const listEl = document.getElementById('main-list');
       listEl.innerHTML = '';
+
+      if (currentTab === 'deep_folders') {
+        document.getElementById('panel-heading').textContent = t.panel_deep_folders;
+        const folders = appState.deepFolders || [];
+        folders.forEach(df => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const note = currentLang === 'ru' ? df.noteRu : df.noteEn;
+          const hiddenTag = df.isHidden ? `<span class="badge badge-Purple">HIDDEN</span>` : '';
+          const cyrTag = df.hasCyrillic ? `<span class="badge badge-Green">КИРИЛЛИЦА / UTF-16</span>` : '';
+          const saveTag = df.hasProtectedSavegames ? `<span class="badge badge-Red">🛡 SAVEGAME SHIELDED</span>` : '';
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-${df.safetyLevel}">${df.categoryLabel}</span>
+                <span>${df.folderName}</span>
+                ${hiddenTag} ${cyrTag} ${saveTag}
+              </div>
+              <div class="rule-desc">${note}</div>
+              <div class="sample-path">${df.fullPath}</div>
+            </div>
+            <div class="rule-metric">${formatBytes(df.sizeBytes)} (${df.fileCount} files)</div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
+
+      if (currentTab === 'space_lens') {
+        document.getElementById('panel-heading').textContent = t.panel_space_lens;
+        const files = appState.spaceLensFiles || [];
+        if (files.length === 0) {
+          listEl.innerHTML = `<div class="rule-row"><span class="rule-desc">${t.empty_space_lens}</span></div>`;
+          return;
+        }
+        files.forEach(f => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const hiddenTag = f.isHidden ? `<span class="badge badge-Purple">HIDDEN</span>` : '';
+          const cyrTag = f.hasCyrillic ? `<span class="badge badge-Green">UTF-16</span>` : '';
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge badge-Yellow">${formatBytes(f.sizeBytes)}</span>
+                <span>${f.fileName}</span>
+                ${hiddenTag} ${cyrTag}
+              </div>
+              <div class="sample-path">${f.fullPath}</div>
+            </div>
+            <div class="rule-metric">${f.daysSinceModified}d ago</div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
+
+      if (currentTab === 'startup') {
+        document.getElementById('panel-heading').textContent = t.panel_startup;
+        const entries = appState.startupEntries || [];
+        entries.forEach(se => {
+          const row = document.createElement('div');
+          row.className = 'rule-row';
+          const badgeClass = se.impactLevel === 'High' ? 'badge-Red' : (se.impactLevel === 'Medium' ? 'badge-Yellow' : 'badge-Green');
+          row.innerHTML = `
+            <div class="rule-info">
+              <div class="rule-name">
+                <span class="badge ${badgeClass}">${se.impactLevel} (+${se.estimatedImpactMs} ms)</span>
+                <span>${se.name}</span>
+              </div>
+              <div class="sample-path">${se.command}</div>
+            </div>
+            <div class="rule-metric">${se.location}</div>
+          `;
+          listEl.appendChild(row);
+        });
+        return;
+      }
 
       if (currentTab === 'registry') {
         document.getElementById('panel-heading').textContent = t.panel_registry;
