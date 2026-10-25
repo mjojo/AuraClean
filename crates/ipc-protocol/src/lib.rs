@@ -67,14 +67,20 @@ pub enum SafetyLevel {
     Red,
 }
 
-/// Tiered quarantine strategy that prevents disk exhaustion during cleanup.
+/// Tiered cleanup & quarantine strategy:
+/// - `ArchiveToVault`: Reserved strictly for sensitive system changes, registry snapshots (`.reg` + JSON),
+///   crash dumps, and Ghost Hunter `AppData` app remnants.
+/// - `DirectDelete` (alias `ManifestOnly`): Used for temporary files (`%TEMP%`), browser caches,
+///   GPU shader caches, and developer build artifacts (`node_modules`, `target`, `.venv`, `.gradle`)
+///   which are 100% reproducible and deleted directly without bloating the quarantine vault.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum QuarantineTier {
-    /// Stream-compress files and registry snapshots into `vault_{uuid}.tar.zst`.
+    /// Stream-compress sensitive system/registry/remnant items into `vault_{uuid}.tar.zst`.
     #[default]
     ArchiveToVault,
-    /// Record cryptographic metadata and rebuild manifest in SQLite without duplicating gigabytes.
-    ManifestOnly,
+    /// Permanently delete reproducible caches, temp files, and dev build folders directly.
+    #[serde(alias = "ManifestOnly")]
+    DirectDelete,
 }
 
 /// Explicit caller context passed from `auraclean-ui.exe` (User Session) to `auraclean-service.exe` (Session 0).

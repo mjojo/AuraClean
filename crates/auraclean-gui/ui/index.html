@@ -210,34 +210,89 @@
       gap: 22px;
     }
 
-    .neural-orb {
-      width: 88px;
-      height: 88px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(168, 85, 247, 0.35), rgba(11, 11, 20, 0.95));
-      border: 2px solid var(--brand-purple);
-      box-shadow: 0 0 28px rgba(168, 85, 247, 0.45), inset 0 0 18px rgba(74, 222, 128, 0.35);
+    /* Animated Cyber-Pulse Reactor Core (Zero Raster Images) */
+    @keyframes spinCW {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes spinCCW {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    @keyframes coreBreath {
+      0%, 100% { transform: scale(0.92); box-shadow: 0 0 18px rgba(74, 222, 128, 0.7), 0 0 36px rgba(168, 85, 247, 0.55); }
+      50% { transform: scale(1.08); box-shadow: 0 0 28px rgba(74, 222, 128, 0.95), 0 0 54px rgba(168, 85, 247, 0.85); }
+    }
+
+    .cyber-reactor {
+      position: relative;
+      width: 92px;
+      height: 92px;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-      transition: transform 0.4s ease;
+      flex-shrink: 0;
     }
 
-    .neural-orb.scanning {
-      animation: pulseSpin 1.1s linear infinite;
+    .cyber-reactor.mini {
+      width: 44px;
+      height: 44px;
     }
 
-    @keyframes pulseSpin {
-      0% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.7), inset 0 0 18px rgba(74, 222, 128, 0.6); transform: scale(1.03); }
-      50% { box-shadow: 0 0 42px rgba(74, 222, 128, 0.8), inset 0 0 25px rgba(168, 85, 247, 0.8); transform: scale(0.97); }
-      100% { box-shadow: 0 0 25px rgba(168, 85, 247, 0.7), inset 0 0 18px rgba(74, 222, 128, 0.6); transform: scale(1.03); }
+    .cyber-reactor.xl {
+      width: 136px;
+      height: 136px;
     }
 
-    .neural-orb img {
-      width: 64px;
-      height: 64px;
+    .reactor-ring-outer {
+      position: absolute;
+      inset: 0;
       border-radius: 50%;
+      border: 2px dashed rgba(168, 85, 247, 0.75);
+      box-shadow: 0 0 24px rgba(168, 85, 247, 0.35), inset 0 0 16px rgba(168, 85, 247, 0.25);
+      animation: spinCW 10s linear infinite;
+    }
+
+    .reactor-ring-mid {
+      position: absolute;
+      inset: 11%;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: var(--brand-green);
+      border-bottom-color: var(--brand-purple);
+      filter: drop-shadow(0 0 8px rgba(74, 222, 128, 0.6));
+      animation: spinCCW 4.5s linear infinite;
+    }
+
+    .reactor-ring-inner {
+      position: absolute;
+      inset: 23%;
+      border-radius: 50%;
+      border: 1.5px dotted rgba(74, 222, 128, 0.8);
+      animation: spinCW 6s linear infinite;
+    }
+
+    .reactor-core-dot {
+      width: 34%;
+      height: 34%;
+      border-radius: 50%;
+      background: radial-gradient(circle, #4ADE80 0%, #A855F7 70%, #0B0B14 100%);
+      animation: coreBreath 2.4s ease-in-out infinite;
+    }
+
+    .cyber-reactor.scanning .reactor-ring-outer {
+      animation-duration: 1.6s;
+      border-color: var(--brand-green);
+    }
+
+    .cyber-reactor.scanning .reactor-ring-mid {
+      animation-duration: 0.85s;
+    }
+
+    .cyber-reactor.scanning .reactor-core-dot {
+      animation-duration: 0.6s;
     }
 
     .hero-actions {
@@ -642,10 +697,13 @@
   </style>
 </head>
 <body>
-  <!-- Animated Startup Splash Screen -->
+  <!-- Animated Startup Splash Screen (Pure Vector / CSS Cyber Reactor) -->
   <div class="splash-screen" id="splash-screen">
-    <div class="splash-logo-wrap">
-      <img id="splash-logo" alt="mjojo" />
+    <div class="cyber-reactor xl scanning">
+      <div class="reactor-ring-outer"></div>
+      <div class="reactor-ring-mid"></div>
+      <div class="reactor-ring-inner"></div>
+      <div class="reactor-core-dot"></div>
     </div>
     <div class="splash-title">AuraClean by mjojo</div>
     <div class="splash-sub" id="splash-status">Initializing Zero-Breakage Safety Core &amp; UTF-16 Engine...</div>
@@ -656,7 +714,11 @@
 
   <aside class="sidebar">
     <div class="brand-box">
-      <img id="sidebar-logo" class="brand-logo" alt="mjojo" />
+      <div class="cyber-reactor mini">
+        <div class="reactor-ring-outer"></div>
+        <div class="reactor-ring-mid"></div>
+        <div class="reactor-core-dot"></div>
+      </div>
       <div>
         <div class="brand-title">AuraClean</div>
         <div class="brand-sub">by mjojo • v0.1.0</div>
@@ -693,8 +755,11 @@
 
     <section class="hero-card">
       <div class="pulse-left">
-        <div class="neural-orb" id="neural-orb">
-          <img id="orb-mascot" alt="mjojo neural core" />
+        <div class="cyber-reactor" id="neural-orb">
+          <div class="reactor-ring-outer"></div>
+          <div class="reactor-ring-mid"></div>
+          <div class="reactor-ring-inner"></div>
+          <div class="reactor-core-dot"></div>
         </div>
         <div>
           <h2 id="hero-status-title" style="font-size: 19px; font-weight: 800;">Neural Safety Core Ready</h2>
@@ -931,6 +996,9 @@
         const title = currentLang === 'ru' ? r.name_ru : r.name_en;
         const desc = currentLang === 'ru' ? r.desc_ru : r.desc_en;
         const defaultChecked = (onlyRuleId || r.safety_level === 'Green') ? 'checked' : '';
+        const modeBadge = r.quarantine_tier === 'ArchiveToVault'
+          ? `<span class="badge badge-Purple">⏳ Quarantine Vault</span>`
+          : `<span class="badge badge-Green">🗑 Direct Delete</span>`;
         const samplesHtml = (r.sample_paths || [])
           .map(p => `<div class="sample-path">• ${p}</div>`)
           .join('');
@@ -944,7 +1012,7 @@
               <div class="rule-name">
                 <span class="badge badge-${r.safety_level}">${r.safety_level}</span>
                 <span>${title}</span>
-                <span class="badge badge-Green" style="opacity:0.85;">${r.quarantine_tier}</span>
+                ${modeBadge}
               </div>
               <div class="rule-desc">${desc}</div>
               ${samplesHtml}
@@ -993,6 +1061,18 @@
       document.getElementById('btn-modal-cancel').textContent = t.modal_cancel;
       document.getElementById('btn-modal-confirm').textContent = t.modal_confirm;
 
+      const isDirect = cmd === 'clean_single_dev';
+      const modeTag = isDirect
+        ? `<span class="badge badge-Green">🗑 Direct Delete (Reproducible)</span>`
+        : `<span class="badge badge-Purple">⏳ Time-Capsule Quarantine</span>`;
+      const modeDesc = isDirect
+        ? (currentLang === 'ru'
+            ? "Удаляется напрямую без архивации в карантин (все файлы автоматически скачаются/пересоберутся при следующей сборке)."
+            : "Deleted directly without bloating the Quarantine Vault (rebuilt automatically on next build command).")
+        : (currentLang === 'ru'
+            ? "Системные изменения и остатки сохраняются в сжатый архив Time-Capsule перед очисткой."
+            : "System changes and remnants are backed up into the reversible Time-Capsule Vault before removal.");
+
       const container = document.getElementById('modal-items-list');
       container.innerHTML = `
         <label class="perm-item">
@@ -1000,10 +1080,10 @@
             <input type="checkbox" class="perm-check" id="single-item-confirm-check" checked />
             <div class="rule-info">
               <div class="rule-name">
-                <span class="badge badge-Purple">Single Item</span>
+                ${modeTag}
                 <span>${displayTitle}</span>
               </div>
-              <div class="rule-desc">Backed up to reversible Time-Capsule Vault before removal.</div>
+              <div class="rule-desc">${modeDesc}</div>
             </div>
           </div>
           <div class="rule-metric">${displaySize}</div>
@@ -1065,12 +1145,6 @@
 
     function renderUI() {
       const t = I18N[currentLang];
-      if (appState.logoDataUri) {
-        document.getElementById('sidebar-logo').src = appState.logoDataUri;
-        const splashLogo = document.getElementById('splash-logo');
-        if (splashLogo) splashLogo.src = appState.logoDataUri;
-      }
-      if (appState.mascotDataUri) document.getElementById('orb-mascot').src = appState.mascotDataUri;
 
       document.getElementById('nav-dashboard').textContent = t.nav_dashboard;
       document.getElementById('nav-deep-folders').textContent = t.nav_deep_folders;
@@ -1331,11 +1405,15 @@
           const singleBtn = hasFiles
             ? `<button class="btn-item-clean" onclick="requestSingleRuleClean('${r.id}')">${t.btn_clean_single}</button>`
             : '';
+          const tierPill = r.quarantine_tier === 'ArchiveToVault'
+            ? `<span class="badge badge-Purple">⏳ Quarantine</span>`
+            : `<span class="badge badge-Green">🗑 Direct Delete</span>`;
           row.innerHTML = `
             <div class="rule-info">
               <div class="rule-name">
                 <span class="badge badge-${r.safety_level}">${r.safety_level}</span>
                 <span>${title}</span>
+                ${tierPill}
               </div>
               <div class="rule-desc">${desc}</div>
             </div>

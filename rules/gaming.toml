@@ -8,7 +8,7 @@ category = "gaming"
 id = "nvidia_dx_cache"
 category = "gaming"
 safety_level = "Yellow"
-quarantine_tier = "ManifestOnly"
+quarantine_tier = "DirectDelete"
 min_age_hours = 24
 paths = [
     "%LOCALAPPDATA%\\NVIDIA\\DXCache\\*",
@@ -18,17 +18,17 @@ exclude_patterns = ["*.lock"]
 
 [rule.i18n.en]
 name = "NVIDIA DirectX & OpenGL Shader Cache"
-description = "Compiled GPU shaders. Safe to purge to reclaim gigabytes or fix stuttering, though games may briefly recompile shaders on next launch."
+description = "Compiled GPU shaders. Deleted directly to reclaim gigabytes; games automatically recompile shaders on launch."
 
 [rule.i18n.ru]
 name = "NVIDIA — Кэш шейдеров DirectX и OpenGL"
-description = "Скомпилированные шейдеры видеокарты. Очистка освобождает гигабайты места, но при первом запуске игры возможна краткая перекомпиляция."
+description = "Скомпилированные шейдеры видеокарты. Удаляются напрямую без карантина; игры сами пересоздают их при запуске."
 
 [[rule]]
 id = "directx_d3dscache"
 category = "gaming"
 safety_level = "Yellow"
-quarantine_tier = "ManifestOnly"
+quarantine_tier = "DirectDelete"
 min_age_hours = 24
 paths = [
     "%LOCALAPPDATA%\\D3DSCache\\*",
@@ -38,17 +38,17 @@ exclude_patterns = []
 
 [rule.i18n.en]
 name = "Windows Direct3D & LocalLow Shader Cache"
-description = "DirectX 12 shader pipeline cache stored in hidden LocalAppData and LocalLow folders."
+description = "DirectX 12 shader pipeline cache stored in hidden LocalAppData and LocalLow folders. Deleted directly."
 
 [rule.i18n.ru]
 name = "Кэш шейдеров Direct3D и скрытой папки AppData\\LocalLow"
-description = "Кэш конвейера шейдеров DirectX 12 в скрытых папках Local и LocalLow."
+description = "Кэш конвейера шейдеров DirectX 12 в скрытых папках Local и LocalLow. Удаляется напрямую."
 
 [[rule]]
 id = "documents_game_crash_logs"
 category = "gaming"
 safety_level = "Green"
-quarantine_tier = "ArchiveToVault"
+quarantine_tier = "DirectDelete"
 min_age_hours = 24
 paths = [
     "%DOCUMENTS%\\My Games\\*\\Logs\\*",

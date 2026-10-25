@@ -220,7 +220,7 @@ impl TimeCapsuleVault {
             {
                 QuarantineTier::ArchiveToVault
             } else {
-                QuarantineTier::ManifestOnly
+                QuarantineTier::DirectDelete
             };
 
             let entry_key = format!("files/item_{idx}.bin");
@@ -270,17 +270,31 @@ impl TimeCapsuleVault {
         finished_file.sync_all()?;
         drop(finished_file);
 
-        // If no files were archived via ArchiveToVault and no registry snapshots were stored, remove empty archive
+        // If no files were archived via ArchiveToVault and no registry snapshots were stored,
+        // remove the empty archive and do NOT clutter the Time-Capsule Vault SQLite table!
         let (final_archive_filename, compressed_vault_bytes) =
             if archived_files_count == 0 && registry_entries.is_empty() {
                 let _ = fs::remove_file(&archive_path);
-                (None, 0u64)
+                for (_, _, orig_path, _, _, _) in &archived_records {
+                    let _ = fs::remove_file(orig_path);
+                }
+                return Ok(VaultTransactionSummary {
+                    transaction_id: tx_id,
+                    created_at,
+                    affected_rules: rule_set,
+                    archived_files_count: 0,
+                    manifest_only_count,
+                    original_bytes_total,
+                    compressed_vault_bytes: 0,
+                    archive_path: None,
+                    restored: false,
+                });
             } else {
                 let len = fs::metadata(&archive_path).map(|m| m.len()).unwrap_or(0);
                 (Some(archive_filename), len)
             };
 
-        // Record transaction atomically in SQLite
+        // Record transaction atomically in SQLite only for genuine Vault transactions
         let mut conn = self.connect_db()?;
         let db_tx = conn.transaction()?;
 
@@ -305,7 +319,7 @@ impl TimeCapsuleVault {
         for (entry_key, rule_id, orig_path, size_bytes, sha256_hex, tier) in &archived_records {
             let tier_str = match tier {
                 QuarantineTier::ArchiveToVault => "ArchiveToVault",
-                QuarantineTier::ManifestOnly => "ManifestOnly",
+                QuarantineTier::DirectDelete => "DirectDelete",
             };
             db_tx.execute(
                 "INSERT INTO quarantined_items (

@@ -7,7 +7,6 @@
 //! Architected and maintained by mjojo (https://github.com/mjojo/AuraClean).
 
 use anyhow::Result;
-use base64::Engine;
 use core_engine::{
     CleaningRule, DeepFolderInsight, DevArtifactEntry, GhostLeftoverEntry, RegistryFinding,
     SpaceLensFileEntry, StartupEntry, SystemMemoryTelemetry, get_system_memory_telemetry,
@@ -17,7 +16,10 @@ use core_engine::{
     scan_stale_dev_artifacts, scan_startup_entries,
 };
 use ipc_protocol::{Locale, ScannedItem, VaultTransactionSummary};
-use safety_guard::{QuarantineCandidate, RegistrySnapshotEntry, TimeCapsuleVault, VaultConfig};
+use safety_guard::{
+    QuarantineCandidate, RegistrySnapshotEntry, TimeCapsuleVault, VaultConfig,
+    evaluate_path_whitelist,
+};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -31,8 +33,6 @@ use uuid::Uuid;
 use wry::WebViewBuilder;
 
 const EMBEDDED_HTML: &str = include_str!("../ui/index.html");
-const EMBEDDED_LOGO_PNG: &[u8] = include_bytes!("../../../assets/brand/mjojo-logo-128.png");
-const EMBEDDED_MASCOT_PNG: &[u8] = include_bytes!("../../../assets/brand/mjojo-mascot-128.png");
 
 #[derive(Debug, Clone)]
 enum UserEvent {
@@ -90,8 +90,6 @@ struct ScanUiSummary {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct FrontendState {
-    logo_data_uri: String,
-    mascot_data_uri: String,
     rules: Vec<RuleUiView>,
     registry_findings: Vec<RegistryFinding>,
     deep_folders: Vec<DeepFolderInsight>,
@@ -149,12 +147,7 @@ fn main() -> Result<()> {
     let rules = load_rules_from_dir(std::path::Path::new("rules"))?;
     let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))?;
 
-    let logo_b64 = base64::engine::general_purpose::STANDARD.encode(EMBEDDED_LOGO_PNG);
-    let mascot_b64 = base64::engine::general_purpose::STANDARD.encode(EMBEDDED_MASCOT_PNG);
-
     let initial_frontend = FrontendState {
-        logo_data_uri: format!("data:image/png;base64,{logo_b64}"),
-        mascot_data_uri: format!("data:image/png;base64,{mascot_b64}"),
         rules: build_rule_views(&rules),
         registry_findings: Vec::new(),
         deep_folders: Vec::new(),
@@ -639,49 +632,33 @@ fn handle_ui_command(
                 return;
             };
 
-            let mut cands = Vec::new();
-            for entry in jwalk::WalkDir::new(&dev.full_path)
-                .follow_links(false)
-                .skip_hidden(false)
-                .max_depth(5)
-                .into_iter()
-                .flatten()
-                .take(500)
-            {
-                if entry.file_type().is_file() {
-                    cands.push(QuarantineCandidate {
-                        rule_id: dev.id.clone(),
-                        path: entry.path(),
-                        requested_tier: ipc_protocol::QuarantineTier::ManifestOnly,
-                    });
-                }
-            }
+            let target_path = PathBuf::from(&dev.full_path);
+            if evaluate_path_whitelist(&target_path).is_allowed() && target_path.exists() {
+                // Reproducible dev artifacts (`node_modules`, `target`, `.venv`, `.gradle`) are deleted directly
+                // without archiving gigabytes into Time-Capsule Vault.
+                let _ = std::fs::remove_dir_all(&target_path);
 
-            if let Ok(vault) = TimeCapsuleVault::open(VaultConfig::new(&vault_dir))
-                && let Ok(tx_summary) = vault.quarantine_batch(&cands, &[])
-            {
+                let vault = TimeCapsuleVault::open(VaultConfig::new(&vault_dir)).ok();
                 let mut guard = shared.lock().unwrap();
                 guard
                     .frontend_state
                     .dev_artifacts
                     .retain(|d| &d.id != target_id);
-                guard.frontend_state.transactions = vault.list_transactions().unwrap_or_default();
-                guard.frontend_state.vault_bytes =
-                    vault.current_vault_footprint_bytes().unwrap_or(0);
+                if let Some(v) = vault {
+                    guard.frontend_state.transactions = v.list_transactions().unwrap_or_default();
+                    guard.frontend_state.vault_bytes =
+                        v.current_vault_footprint_bytes().unwrap_or(0);
+                }
                 recompute_scan_summary(&mut guard);
 
                 let toast = match locale {
                     Locale::En => format!(
-                        "Cleaned '{}' ({}) — recorded in Time-Capsule {}",
-                        dev.project_name,
-                        dev.artifact_kind,
-                        &tx_summary.transaction_id.to_string()[..8]
+                        "Directly deleted '{}' ({}) — rebuild anytime via `{}`",
+                        dev.project_name, dev.artifact_kind, dev.rebuild_hint
                     ),
                     Locale::Ru => format!(
-                        "Очищена сборка «{}» ({}) — зафиксировано в Time-Capsule {}",
-                        dev.project_name,
-                        dev.artifact_kind,
-                        &tx_summary.transaction_id.to_string()[..8]
+                        "Напрямую удалена сборка «{}» ({}) — пересобирается через `{}`",
+                        dev.project_name, dev.artifact_kind, dev.rebuild_hint
                     ),
                 };
                 if let Ok(state_json) = serde_json::to_string(&guard.frontend_state) {

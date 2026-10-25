@@ -8,7 +8,7 @@ category = "browsers"
 id = "chrome_web_cache"
 category = "browsers"
 safety_level = "Green"
-quarantine_tier = "ManifestOnly"
+quarantine_tier = "DirectDelete"
 detect_processes = ["chrome.exe"]
 min_age_hours = 2
 paths = [
@@ -19,17 +19,17 @@ exclude_patterns = ["*.lock", "index"]
 
 [rule.i18n.en]
 name = "Google Chrome — Web & Code Cache"
-description = "Temporary copies of website images and compiled scripts. Saved passwords, cookies, and active logins are never touched."
+description = "Temporary copies of website images and compiled scripts. Deleted directly; passwords and active logins are never touched."
 
 [rule.i18n.ru]
 name = "Google Chrome — Кэш веб-страниц и скриптов"
-description = "Временные копии картинок и скриптов с сайтов. Пароли, куки и активные сессии не затрагиваются."
+description = "Временные копии картинок и скриптов с сайтов. Удаляются напрямую; пароли и активные сессии не затрагиваются."
 
 [[rule]]
 id = "edge_web_cache"
 category = "browsers"
 safety_level = "Green"
-quarantine_tier = "ManifestOnly"
+quarantine_tier = "DirectDelete"
 detect_processes = ["msedge.exe"]
 min_age_hours = 2
 paths = [
@@ -40,8 +40,8 @@ exclude_patterns = ["*.lock", "index"]
 
 [rule.i18n.en]
 name = "Microsoft Edge — Web & Code Cache"
-description = "Temporary browser cache files across all Edge profiles. Logins and history remain intact."
+description = "Temporary browser cache files across all Edge profiles. Deleted directly; logins and history remain intact."
 
 [rule.i18n.ru]
 name = "Microsoft Edge — Кэш веб-страниц и скриптов"
-description = "Временные файлы кэша во всех профилях Edge. Авторизация и история браузера сохраняются."
+description = "Временные файлы кэша во всех профилях Edge. Удаляются напрямую; авторизация и история браузера сохраняются."
